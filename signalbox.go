@@ -26,8 +26,16 @@ import (
 	"net/http"
 )
 
-// Echo the data received on the WebSocket.
-func EchoServer(ws *websocket.Conn) {
+func Message(ws *websocket.Conn) {
+	// Pull the message out and parse the command structure.
+	// All messages are text (utf-8 encoded at present)
+
+	// Message parts are delimited by a pipe (|) character
+	// Message commands must be contained in the initial message part and can be recognized simply as their first character is the forward slash (/) character.
+	// All messages (apart from /to messages) are distributed to all active peers currently "announced" in a room.
+	// All signaling clients identify themselves with a unique, non-reusable id.
+
+	// Echo the data received on the WebSocket.
 	io.Copy(ws, ws)
 }
 
@@ -35,7 +43,7 @@ func main() {
 	fmt.Printf("SignalBox!\n")
 
 	// Routes.
-	http.Handle("/echo", websocket.Handler(EchoServer))
+	http.Handle("/", websocket.Handler(Message))
 
 	err := http.ListenAndServe(":3000", nil)
 	if err != nil {

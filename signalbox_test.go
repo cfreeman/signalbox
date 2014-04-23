@@ -29,7 +29,7 @@ func TestSocket(t *testing.T) {
 
 	// Open socket.
 	origin := "http://localhost/"
-	url := "ws://localhost:3000/echo"
+	url := "ws://localhost:3000"
 	ws, err := websocket.Dial(url, "", origin)
 
 	if err != nil {
