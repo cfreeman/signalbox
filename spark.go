@@ -19,26 +19,7 @@
 
 package main
 
-import (
-	"code.google.com/p/go.net/websocket"
-	"fmt"
-	"io"
-	"net/http"
-)
-
-// Echo the data received on the WebSocket.
-func EchoServer(ws *websocket.Conn) {
-	io.Copy(ws, ws)
-}
-
-func main() {
-	fmt.Printf("SignalBox!\n")
-
-	// Routes.
-	http.Handle("/echo", websocket.Handler(EchoServer))
-
-	err := http.ListenAndServe(":3000", nil)
-	if err != nil {
-		panic("ListenAndServe: " + err.Error())
-	}
+type Spark struct {
+	Id      string
+	Address string
 }

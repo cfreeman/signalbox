@@ -20,25 +20,24 @@
 package main
 
 import (
-	"code.google.com/p/go.net/websocket"
-	"fmt"
-	"io"
-	"net/http"
+	"testing"
 )
 
-// Echo the data received on the WebSocket.
-func EchoServer(ws *websocket.Conn) {
-	io.Copy(ws, ws)
-}
+func TestRoom(t *testing.T) {
+	r := Room{"foo", make(map[string]Spark)}
+	s := Spark{"a", "blah.com"}
 
-func main() {
-	fmt.Printf("SignalBox!\n")
+	r.Join(s)
+	if len(r.RoomMates) != 1 {
+		t.Errorf("Unable to join room.")
+	}
 
-	// Routes.
-	http.Handle("/echo", websocket.Handler(EchoServer))
+	if r.RoomMates[s.Id] != s {
+		t.Errorf("Spark missing from room.")
+	}
 
-	err := http.ListenAndServe(":3000", nil)
-	if err != nil {
-		panic("ListenAndServe: " + err.Error())
+	r.Leave(s)
+	if len(r.RoomMates) != 0 {
+		t.Errorf("Unable to leave room.")
 	}
 }

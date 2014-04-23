@@ -19,26 +19,19 @@
 
 package main
 
-import (
-	"code.google.com/p/go.net/websocket"
-	"fmt"
-	"io"
-	"net/http"
-)
-
-// Echo the data received on the WebSocket.
-func EchoServer(ws *websocket.Conn) {
-	io.Copy(ws, ws)
+type Room struct {
+	Name      string
+	RoomMates map[string]Spark
 }
 
-func main() {
-	fmt.Printf("SignalBox!\n")
+func (r Room) Join(s Spark) {
+	r.RoomMates[s.Id] = s
+}
 
-	// Routes.
-	http.Handle("/echo", websocket.Handler(EchoServer))
+func (r Room) Leave(s Spark) {
+	delete(r.RoomMates, s.Id)
+}
 
-	err := http.ListenAndServe(":3000", nil)
-	if err != nil {
-		panic("ListenAndServe: " + err.Error())
-	}
+func (r Room) Write(m string, s Spark) {
+	// TODO: Write a message to all sparks in the room, except the source.
 }
