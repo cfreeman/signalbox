@@ -26,7 +26,27 @@ import (
 	"unicode/utf8"
 )
 
-type messageFn func(source Peer, state SignalBox) (newState SignalBox, err error)
+type messageFn func(source Peer, destination string, state SignalBox) (newState SignalBox, err error)
+
+func announce(source Peer, destination string, state SignalBox) (newState SignalBox, err error) {
+	fmt.Printf("announcing!\n")
+	return state, nil
+}
+
+func leave(source Peer, destination string, state SignalBox) (newState SignalBox, err error) {
+	fmt.Printf("leaving!\n")
+	return state, nil
+}
+
+func to(source Peer, destination string, state SignalBox) (newState SignalBox, err error) {
+	fmt.Printf("to!\n")
+	return state, nil
+}
+
+func custom(source Peer, destination string, state SignalBox) (newState SignalBox, err error) {
+	fmt.Printf("custom!\n")
+	return state, nil
+}
 
 func ParseMessage(message string) (action messageFn, source Peer, err error) {
 	// All messages are text (utf-8 encoded at present)
@@ -39,16 +59,16 @@ func ParseMessage(message string) (action messageFn, source Peer, err error) {
 
 	switch parts[0] {
 	case "/announce":
-		fmt.Printf("announcing!\n")
+		return announce, Peer{}, nil
 
 	case "/leave":
-		fmt.Printf("leaving!\n")
+		return leave, Peer{}, nil
 
 	case "/to":
-		fmt.Printf("to!\n")
+		return to, Peer{}, nil
 
 	default:
-		// Custom message.
+		return custom, Peer{}, nil
 	}
 
 	// Pull the message out and parse the command structure.
