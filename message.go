@@ -26,7 +26,7 @@ import (
 	"unicode/utf8"
 )
 
-type messageFn func(source Peer) (err error)
+type messageFn func(source Peer, state SignalBox) (newState SignalBox, err error)
 
 func ParseMessage(message string) (action messageFn, source Peer, err error) {
 	// All messages are text (utf-8 encoded at present)

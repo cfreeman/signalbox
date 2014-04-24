@@ -25,17 +25,29 @@ import (
 	"net/http"
 )
 
-func Message(ws *websocket.Conn) {
-	var message string
-	websocket.Message.Receive(ws, &message)
-	ParseMessage(message)
+type Peer struct {
+	Id string // The unique identifier of the peer.
+}
+
+type Room struct {
+	Name string // The unique name of the room (id).
+}
+
+type SignalBox struct {
+	Peers        map[string]Peer    // All the peers currently inside this signalbox.
+	Rooms        map[string]Room    // All the rooms currently inside this signalbox.
+	RoomContains map[string][]*Peer // All the peers currently inside a room.
+	PeerIsIn     map[string][]*Room // All the rooms a peer is currently inside.
 }
 
 func main() {
 	fmt.Printf("SignalBox!\n")
 
-	// Routes.
-	http.Handle("/", websocket.Handler(Message))
+	http.Handle("/", websocket.Handler(func(ws *websocket.Conn) {
+		var message string
+		websocket.Message.Receive(ws, &message)
+		ParseMessage(message)
+	}))
 
 	err := http.ListenAndServe(":3000", nil)
 	if err != nil {
