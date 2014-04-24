@@ -21,17 +21,17 @@ package main
 
 type Room struct {
 	Name      string
-	RoomMates map[string]Spark
+	RoomMates map[string]Peer
 }
 
-func (r Room) Join(s Spark) {
+func (r Room) Join(s Peer) {
 	r.RoomMates[s.Id] = s
 }
 
-func (r Room) Leave(s Spark) {
+func (r Room) Leave(s Peer) {
 	delete(r.RoomMates, s.Id)
 }
 
-func (r Room) Write(m string, s Spark) {
+func (r Room) Write(m string, s Peer) {
 	// TODO: Write a message to all sparks in the room, except the source.
 }

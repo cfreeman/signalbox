@@ -19,7 +19,7 @@
 
 package main
 
-type Spark struct {
+type Peer struct {
 	Id      string
 	Address string
 }

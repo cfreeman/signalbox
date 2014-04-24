@@ -25,12 +25,12 @@ import (
 
 func TestUtf8Encoding(t *testing.T) {
 	message := string([]byte{0xff, 0xfe, 0xfd})
-	err := ParseMessage(message)
+	_, _, err := ParseMessage(message)
 	if err == nil {
 		t.Errorf("Expected utf8 error")
 	}
 
-	err = ParseMessage("/announce|{blah}|blah")
+	_, _, err = ParseMessage("/announce|{blah}|blah")
 	if err != nil {
 		t.Errorf("Unexpected utf8 error")
 	}
@@ -38,6 +38,8 @@ func TestUtf8Encoding(t *testing.T) {
 
 func TestPartSeperation(t *testing.T) {
 	message := "/announce"
-	err := ParseMessage(message)
-
+	_, _, err := ParseMessage(message)
+	if err != nil {
+		t.Errorf("")
+	}
 }

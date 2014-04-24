@@ -21,17 +21,32 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"unicode/utf8"
 )
 
-func ParseMessage(message string) error {
+type messageFn func(source Peer) (err error)
+
+func ParseMessage(message string) (action messageFn, source Peer, err error) {
 	// All messages are text (utf-8 encoded at present)
 	if !utf8.Valid([]byte(message)) {
-		return errors.New("Message is not utf-8 encoded")
+		return nil, Peer{}, errors.New("Message is not utf-8 encoded")
 	}
 
 	// Message parts are delimited by a pipe (|) character
-	parts := message.split("|")
+	parts := strings.Split(message, "|")
+
+	switch parts[0] {
+	case "/announce":
+		fmt.Printf("announcing!\n")
+
+	case "/leave":
+		fmt.Printf("leaving!\n")
+
+	case "/to":
+		fmt.Printf("to!\n")
+	}
 
 	// Pull the message out and parse the command structure.
 
@@ -39,5 +54,5 @@ func ParseMessage(message string) error {
 	// All messages (apart from /to messages) are distributed to all active peers currently "announced" in a room.
 	// All signaling clients identify themselves with a unique, non-reusable id.
 
-	return nil
+	return nil, Peer{}, nil
 }

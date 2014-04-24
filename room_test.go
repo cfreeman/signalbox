@@ -24,8 +24,8 @@ import (
 )
 
 func TestRoom(t *testing.T) {
-	r := Room{"foo", make(map[string]Spark)}
-	s := Spark{"a", "blah.com"}
+	r := Room{"foo", make(map[string]Peer)}
+	s := Peer{"a", "blah.com"}
 
 	r.Join(s)
 	if len(r.RoomMates) != 1 {

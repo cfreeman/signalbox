@@ -28,7 +28,7 @@ import (
 func Message(ws *websocket.Conn) {
 	var message string
 	websocket.Message.Receive(ws, &message)
-	fmt.Printf("MESSAGE: %s\n", message)
+	ParseMessage(message)
 }
 
 func main() {
