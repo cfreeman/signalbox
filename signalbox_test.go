@@ -25,7 +25,7 @@ import (
 )
 
 func TestSocket(t *testing.T) {
-	go main()
+	// go main()
 
 	// Open socket.
 	origin := "http://localhost/"
@@ -36,6 +36,9 @@ func TestSocket(t *testing.T) {
 		t.Errorf("Unable open websocket to signalbox.")
 		return
 	}
+
+	message := "/to"
+	websocket.Message.Send(ws, message)
 
 	// Close socket.
 	err = ws.Close()

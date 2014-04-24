@@ -20,25 +20,24 @@
 package main
 
 import (
-	"code.google.com/p/go.net/websocket"
-	"fmt"
-	"net/http"
+	"testing"
 )
 
-func Message(ws *websocket.Conn) {
-	var message string
-	websocket.Message.Receive(ws, &message)
-	fmt.Printf("MESSAGE: %s\n", message)
+func TestUtf8Encoding(t *testing.T) {
+	message := string([]byte{0xff, 0xfe, 0xfd})
+	err := ParseMessage(message)
+	if err == nil {
+		t.Errorf("Expected utf8 error")
+	}
+
+	err = ParseMessage("/announce|{blah}|blah")
+	if err != nil {
+		t.Errorf("Unexpected utf8 error")
+	}
 }
 
-func main() {
-	fmt.Printf("SignalBox!\n")
+func TestPartSeperation(t *testing.T) {
+	message := "/announce"
+	err := ParseMessage(message)
 
-	// Routes.
-	http.Handle("/", websocket.Handler(Message))
-
-	err := http.ListenAndServe(":3000", nil)
-	if err != nil {
-		panic("ListenAndServe: " + err.Error())
-	}
 }

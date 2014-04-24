@@ -20,25 +20,24 @@
 package main
 
 import (
-	"code.google.com/p/go.net/websocket"
-	"fmt"
-	"net/http"
+	"errors"
+	"unicode/utf8"
 )
 
-func Message(ws *websocket.Conn) {
-	var message string
-	websocket.Message.Receive(ws, &message)
-	fmt.Printf("MESSAGE: %s\n", message)
-}
-
-func main() {
-	fmt.Printf("SignalBox!\n")
-
-	// Routes.
-	http.Handle("/", websocket.Handler(Message))
-
-	err := http.ListenAndServe(":3000", nil)
-	if err != nil {
-		panic("ListenAndServe: " + err.Error())
+func ParseMessage(message string) error {
+	// All messages are text (utf-8 encoded at present)
+	if !utf8.Valid([]byte(message)) {
+		return errors.New("Message is not utf-8 encoded")
 	}
+
+	// Message parts are delimited by a pipe (|) character
+	parts := message.split("|")
+
+	// Pull the message out and parse the command structure.
+
+	// Message commands must be contained in the initial message part and can be recognized simply as their first character is the forward slash (/) character.
+	// All messages (apart from /to messages) are distributed to all active peers currently "announced" in a room.
+	// All signaling clients identify themselves with a unique, non-reusable id.
+
+	return nil
 }
