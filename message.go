@@ -46,6 +46,9 @@ func ParseMessage(message string) (action messageFn, source Peer, err error) {
 
 	case "/to":
 		fmt.Printf("to!\n")
+
+	default:
+		// Custom message.
 	}
 
 	// Pull the message out and parse the command structure.
