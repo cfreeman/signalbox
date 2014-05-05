@@ -30,7 +30,7 @@ func TestUtf8Encoding(t *testing.T) {
 		t.Errorf("Expected utf8 error")
 	}
 
-	_, _, err = ParseMessage("/announce|{blah}|blah")
+	_, _, err = ParseMessage("/announce|{\"id\":\"dc6ac0ae-6e15-409b-b211-228a8f4a43b9\"}|{\"browser\":\"node\",\"browserVersion\":\"?\",\"id\":\"dc6ac0ae-6e15-409b-b211-228a8f4a43b9\",\"agent\":\"signaller@0.18.3\",\"room\":\"test-room\"}")
 	if err != nil {
 		t.Errorf("Unexpected utf8 error")
 	}

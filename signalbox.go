@@ -26,11 +26,12 @@ import (
 )
 
 type Peer struct {
-	Id string // The unique identifier of the peer.
+	Id     string          // The unique identifier of the peer.
+	socket *websocket.Conn //The socket for writing to the peer.
 }
 
 type Room struct {
-	Name string // The unique name of the room (id).
+	Room string // The unique name of the room (id).
 }
 
 type SignalBox struct {
@@ -41,12 +42,25 @@ type SignalBox struct {
 }
 
 func main() {
-	fmt.Printf("SignalBox!\n")
+	fmt.Printf("SignalBox Started!\n")
+
+	s := SignalBox{make(map[string]Peer),
+		make(map[string]Room),
+		make(map[string][]*Peer),
+		make(map[string][]*Room)}
 
 	http.Handle("/", websocket.Handler(func(ws *websocket.Conn) {
 		var message string
 		websocket.Message.Receive(ws, &message)
-		ParseMessage(message)
+		action, messageBody, err := ParseMessage(message)
+		if err != nil {
+			fmt.Printf("Unable to parse message: %s!\n", message)
+		}
+
+		s, err = action(messageBody, ws, s)
+		if err != nil {
+			fmt.Printf("Error unable to alter signal box")
+		}
 	}))
 
 	err := http.ListenAndServe(":3000", nil)
