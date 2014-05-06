@@ -41,8 +41,7 @@ func announce(messageBody []string,
 		return state, err
 	}
 
-	// Inject reference to websocket into new peer.
-	source.socket = sourceSocket
+	source.socket = sourceSocket // Inject a reference to the websocket within the new peer.
 
 	peer, exists := state.Peers[source.Id]
 	if !exists {
@@ -58,10 +57,29 @@ func announce(messageBody []string,
 
 	fmt.Printf("announcing - %s to %s\n", source.Id, destination.Room)
 
-	// TODO Announce to the other peers in the room of the arrival of source.
+	roomContainsPeer := false
+	for _, p := range state.RoomContains[room.Room] {
+		if p.Id != peer.Id {
+			// TODO Announce to the other peers in the room of the arrival of source.
+		} else {
+			roomContainsPeer = true
+		}
+	}
 
-	state.RoomContains[room.Room] = append(state.RoomContains[room.Room], &peer)
-	state.PeerIsIn[peer.Id] = append(state.PeerIsIn[peer.Id], &room)
+	if !roomContainsPeer {
+		state.RoomContains[room.Room] = append(state.RoomContains[room.Room], &peer)
+	}
+
+	peerIsInRoom := false
+	for _, r := range state.PeerIsIn[peer.Id] {
+		if r.Room == room.Room {
+			peerIsInRoom = true
+		}
+	}
+
+	if !peerIsInRoom {
+		state.PeerIsIn[peer.Id] = append(state.PeerIsIn[peer.Id], &room)
+	}
 
 	return state, nil
 }
@@ -98,7 +116,7 @@ func to(messageBody []string,
 	sourceSocket *websocket.Conn,
 	state SignalBox) (newState SignalBox, err error) {
 
-	fmt.Printf("to!\n")
+	fmt.Printf("to message\n")
 	return state, nil
 }
 
@@ -106,17 +124,21 @@ func custom(messageBody []string,
 	sourceSocket *websocket.Conn,
 	state SignalBox) (newState SignalBox, err error) {
 
-	fmt.Printf("custom!\n")
+	fmt.Printf("custom message\n")
 	return state, nil
 }
 
 func ParsePeerAndRoom(messageBody []string) (source Peer, destination Room, err error) {
-	err = json.Unmarshal([]byte(messageBody[0]), &source)
+	if len(messageBody) < 3 {
+		return Peer{}, Room{}, errors.New("Not enough parts in the message body to parse peer and room.")
+	}
+
+	err = json.Unmarshal([]byte(messageBody[1]), &source)
 	if err != nil {
 		return Peer{}, Room{}, err
 	}
 
-	err = json.Unmarshal([]byte(messageBody[1]), &destination)
+	err = json.Unmarshal([]byte(messageBody[2]), &destination)
 	if err != nil {
 		return Peer{}, Room{}, err
 	}
@@ -135,17 +157,15 @@ func ParseMessage(message string) (action messageFn, messageBody []string, err e
 
 	switch parts[0] {
 	case "/announce":
-		return announce, parts[1:], nil
+		return announce, parts, nil
 
 	case "/leave":
-		return leave, parts[1:], nil
+		return leave, parts, nil
 
 	case "/to":
-		return to, parts[1:], nil
+		return to, parts, nil
 
 	default:
-		return custom, parts[1:], nil
+		return custom, parts, nil
 	}
-
-	return nil, nil, nil
 }

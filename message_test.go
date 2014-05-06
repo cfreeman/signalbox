@@ -20,6 +20,8 @@
 package main
 
 import (
+	"reflect"
+	"runtime"
 	"testing"
 )
 
@@ -36,10 +38,86 @@ func TestUtf8Encoding(t *testing.T) {
 	}
 }
 
-func TestPartSeperation(t *testing.T) {
-	message := "/announce"
-	_, _, err := ParseMessage(message)
-	if err != nil {
-		t.Errorf("")
+func TestParseMessage(t *testing.T) {
+	action, message, err := ParseMessage("/announce")
+	if err != nil || runtime.FuncForPC(reflect.ValueOf(action).Pointer()).Name() != "github.com/cfreeman/signalbox.announce" {
+		t.Errorf("Announce message incorrectly parsed")
 	}
+
+	if len(message) != 1 {
+		t.Errorf("Non empty body for announce message.")
+	}
+
+	action, _, err = ParseMessage("/leave")
+	if err != nil || runtime.FuncForPC(reflect.ValueOf(action).Pointer()).Name() != "github.com/cfreeman/signalbox.leave" {
+		t.Errorf("Leave message incorrectly parsed")
+	}
+
+	action, _, err = ParseMessage("/to")
+	if err != nil || runtime.FuncForPC(reflect.ValueOf(action).Pointer()).Name() != "github.com/cfreeman/signalbox.to" {
+		t.Errorf("To message incorrectly parsed")
+	}
+
+	action, message, err = ParseMessage("/custom|part1|part2")
+	if err != nil || runtime.FuncForPC(reflect.ValueOf(action).Pointer()).Name() != "github.com/cfreeman/signalbox.custom" {
+		t.Errorf("Custom message incorrectly parsed")
+	}
+
+	if len(message) != 3 || message[1] != "part1" || message[2] != "part2" {
+		t.Errorf("incorrectly parsed the parts to the body of the message")
+	}
+
+	// TODO test malformed messages.
+}
+
+func TestParsePeerAndRoom(t *testing.T) {
+	_, message, _ := ParseMessage("/foo")
+	source, destination, err := ParsePeerAndRoom(message)
+	if err == nil {
+		t.Errorf("Expected pre-condition error parsing peer and room.")
+	}
+
+	_, message, _ = ParseMessage("/announce|{\"id\":\"abc\"}|{\"room\":\"test\"}")
+	source, destination, err = ParsePeerAndRoom(message)
+	if err != nil {
+		t.Errorf("Unexpected error parsing peer and room from message")
+	}
+
+	if source.Id != "abc" || destination.Room != "test" {
+		t.Errorf("Source or destination incorrectly parsed")
+	}
+}
+
+func TestAnnounce(t *testing.T) {
+	action, message, err := ParseMessage("/announce|{\"id\":\"abc\"}|{\"room\":\"test\"}")
+	if err != nil {
+		t.Errorf("Unexpected error parsing announce message")
+	}
+
+	state := SignalBox{make(map[string]Peer),
+		make(map[string]Room),
+		make(map[string][]*Peer),
+		make(map[string][]*Room)}
+
+	state, err = action(message, nil, state)
+	state, err = action(message, nil, state)
+	if len(state.Peers) != 1 {
+		t.Errorf("Expected the total number of peers in the signal box to be 1.")
+	}
+
+	if len(state.Rooms) != 1 {
+		t.Errorf("Exected the total number of rooms in the signal box to be 1.")
+	}
+
+	if len(state.RoomContains["test"]) == 1 && state.RoomContains["test"][0].Id != "abc" {
+		t.Errorf("Room doesn't contain abc.")
+	}
+
+	if len(state.PeerIsIn["abc"]) == 1 && state.PeerIsIn["abc"][0].Room != "test" {
+		t.Errorf("abc is not in room test")
+	}
+}
+
+func TestAnnounceBroadcast(t *testing.T) {
+
 }
