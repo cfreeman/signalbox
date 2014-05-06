@@ -21,6 +21,7 @@ package main
 
 import (
 	"code.google.com/p/go.net/websocket"
+	"fmt"
 	"reflect"
 	"runtime"
 	"testing"
@@ -154,17 +155,19 @@ func TestAnnounceBroadcast(t *testing.T) {
 		t.Error(err)
 	}
 
+	// TODO going to need a and b on seperate ports some how I think.
+
 	// Give the server a chance to respond
 	time.Sleep(50 * time.Millisecond)
 
-	// msg := make([]byte, 512)
-	// /n, err := a.Read(msg)
+	msg := make([]byte, 512)
+	n, err := a.Read(msg)
 
-	//if err != nil {
-	//	t.Error(err)
-	//}
-	//t.Error(fmt.Sprintf("Received: %s.\n", msg[:n]))
-	//t.Error("foo")
+	if err != nil {
+		t.Error(err)
+	}
+	t.Error(fmt.Sprintf("Received: %s.\n", msg[:n]))
+	t.Error("foo")
 
 	//t.Error("foo")
 }

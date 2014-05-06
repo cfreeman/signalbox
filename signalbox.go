@@ -52,6 +52,7 @@ func main() {
 	http.Handle("/", websocket.Handler(func(ws *websocket.Conn) {
 		var message string
 		websocket.Message.Receive(ws, &message)
+
 		fmt.Printf("Message: %s\n", message)
 		action, messageBody, err := ParseMessage(message)
 		if err != nil {
