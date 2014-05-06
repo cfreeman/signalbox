@@ -41,33 +41,39 @@ func announce(messageBody []string,
 		return state, err
 	}
 
-	source.socket = sourceSocket // Inject a reference to the websocket within the new peer.
-
 	peer, exists := state.Peers[source.Id]
 	if !exists {
 		fmt.Printf("Adding Peer: %s\n", source.Id)
-		state.Peers[source.Id] = source
+		state.Peers[source.Id] = new(Peer)
+		state.Peers[source.Id].Id = source.Id
+		state.Peers[source.Id].socket = sourceSocket // Inject a reference to the websocket within the new peer.
+		peer = state.Peers[source.Id]
 	}
 
 	room, exists := state.Rooms[destination.Room]
 	if !exists {
 		fmt.Printf("Adding Room: %s\n", destination.Room)
-		state.Rooms[destination.Room] = destination
+		state.Rooms[destination.Room] = new(Room)
+		state.Rooms[destination.Room].Room = destination.Room
+		room = state.Rooms[destination.Room]
 	}
-
-	fmt.Printf("announcing - %s to %s\n", source.Id, destination.Room)
 
 	roomContainsPeer := false
 	for _, p := range state.RoomContains[room.Room] {
 		if p.Id != peer.Id {
-			// TODO Announce to the other peers in the room of the arrival of source.
+			if p.socket != nil {
+				fmt.Printf("writing %s to %s\n", strings.Join(messageBody, "|"), p.Id)
+				_, err := p.socket.Write([]byte(strings.Join(messageBody, "|")))
+				if err != nil {
+					fmt.Printf("Unable to write - %s\n", err)
+				}
+			}
 		} else {
 			roomContainsPeer = true
 		}
 	}
-
 	if !roomContainsPeer {
-		state.RoomContains[room.Room] = append(state.RoomContains[room.Room], &peer)
+		state.RoomContains[room.Room] = append(state.RoomContains[room.Room], peer)
 	}
 
 	peerIsInRoom := false
@@ -76,9 +82,8 @@ func announce(messageBody []string,
 			peerIsInRoom = true
 		}
 	}
-
 	if !peerIsInRoom {
-		state.PeerIsIn[peer.Id] = append(state.PeerIsIn[peer.Id], &room)
+		state.PeerIsIn[peer.Id] = append(state.PeerIsIn[peer.Id], room)
 	}
 
 	return state, nil

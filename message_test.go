@@ -20,9 +20,11 @@
 package main
 
 import (
+	"code.google.com/p/go.net/websocket"
 	"reflect"
 	"runtime"
 	"testing"
+	"time"
 )
 
 func TestUtf8Encoding(t *testing.T) {
@@ -89,13 +91,18 @@ func TestParsePeerAndRoom(t *testing.T) {
 }
 
 func TestAnnounce(t *testing.T) {
-	action, message, err := ParseMessage("/announce|{\"id\":\"abc\"}|{\"room\":\"test\"}")
+	action, message, err := ParseMessage("/announce|{\"id\":\"a\"}|{\"room\":\"test\"}")
 	if err != nil {
 		t.Errorf("Unexpected error parsing announce message")
 	}
 
-	state := SignalBox{make(map[string]Peer),
-		make(map[string]Room),
+	action, message2, err := ParseMessage("/announce|{\"id\":\"b\"}|{\"room\":\"test\"}")
+	if err != nil {
+		t.Errorf("Unexpected error parsing announce message")
+	}
+
+	state := SignalBox{make(map[string]*Peer),
+		make(map[string]*Room),
 		make(map[string][]*Peer),
 		make(map[string][]*Room)}
 
@@ -106,18 +113,58 @@ func TestAnnounce(t *testing.T) {
 	}
 
 	if len(state.Rooms) != 1 {
+		t.Errorf("Expected the total number of rooms in the signal box to be 1.")
+	}
+
+	if len(state.RoomContains["test"]) == 1 && state.RoomContains["test"][0].Id != "a" {
+		t.Errorf("Room doesn't contain a.")
+	}
+
+	if len(state.PeerIsIn["a"]) == 1 && state.PeerIsIn["a"][0].Room != "test" {
+		t.Errorf("abc is not in room test")
+	}
+
+	state, err = action(message2, nil, state)
+	if len(state.Peers) != 2 {
+		t.Errorf("Expected the total number of peers in the signal box to be 2.")
+	}
+
+	if len(state.Rooms) != 1 {
 		t.Errorf("Exected the total number of rooms in the signal box to be 1.")
 	}
 
-	if len(state.RoomContains["test"]) == 1 && state.RoomContains["test"][0].Id != "abc" {
-		t.Errorf("Room doesn't contain abc.")
-	}
-
-	if len(state.PeerIsIn["abc"]) == 1 && state.PeerIsIn["abc"][0].Room != "test" {
-		t.Errorf("abc is not in room test")
+	if len(state.RoomContains["test"]) != 2 {
+		t.Errorf("Expected the test room to contain two peers.")
 	}
 }
 
 func TestAnnounceBroadcast(t *testing.T) {
+	go main()
 
+	url := "ws://localhost:3000"
+	a, _ := websocket.Dial(url, "", "http://a/")
+	_, err := a.Write([]byte("/announce|{\"id\":\"a\"}|{\"room\":\"test-room\"}"))
+	if err != nil {
+		t.Error(err)
+	}
+
+	b, _ := websocket.Dial(url, "", "http://b/")
+	_, err = b.Write([]byte("/announce|{\"id\":\"b\"}|{\"room\":\"test-room\"}"))
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Give the server a chance to respond
+	time.Sleep(50 * time.Millisecond)
+
+	// msg := make([]byte, 512)
+	// /n, err := a.Read(msg)
+
+	//if err != nil {
+	//	t.Error(err)
+	//}
+	//t.Error(fmt.Sprintf("Received: %s.\n", msg[:n]))
+	//t.Error("foo")
+
+	//t.Error("foo")
 }

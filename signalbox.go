@@ -35,8 +35,8 @@ type Room struct {
 }
 
 type SignalBox struct {
-	Peers        map[string]Peer    // All the peers currently inside this signalbox.
-	Rooms        map[string]Room    // All the rooms currently inside this signalbox.
+	Peers        map[string]*Peer   // All the peers currently inside this signalbox.
+	Rooms        map[string]*Room   // All the rooms currently inside this signalbox.
 	RoomContains map[string][]*Peer // All the peers currently inside a room.
 	PeerIsIn     map[string][]*Room // All the rooms a peer is currently inside.
 }
@@ -44,14 +44,15 @@ type SignalBox struct {
 func main() {
 	fmt.Printf("SignalBox Started!\n")
 
-	s := SignalBox{make(map[string]Peer),
-		make(map[string]Room),
+	s := SignalBox{make(map[string]*Peer),
+		make(map[string]*Room),
 		make(map[string][]*Peer),
 		make(map[string][]*Room)}
 
 	http.Handle("/", websocket.Handler(func(ws *websocket.Conn) {
 		var message string
 		websocket.Message.Receive(ws, &message)
+		fmt.Printf("Message: %s\n", message)
 		action, messageBody, err := ParseMessage(message)
 		if err != nil {
 			fmt.Printf("Unable to parse message: %s!\n", message)
