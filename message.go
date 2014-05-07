@@ -59,15 +59,11 @@ func announce(messageBody []string,
 	}
 
 	roomContainsPeer := false
+	// Annouce the arrival to all the peers currently in the room.
 	for _, p := range state.RoomContains[room.Room] {
 		if p.Id != peer.Id {
 			if p.socket != nil {
-				fmt.Printf("writing %s to %s\n", strings.Join(messageBody, "|"), p.Id)
 				p.socket.WriteMessage(websocket.TextMessage, []byte(strings.Join(messageBody, "|")))
-				//_, err := p.socket.Write([]byte(strings.Join(messageBody, "|")))
-				if err != nil {
-					fmt.Printf("Unable to write - %s\n", err)
-				}
 			}
 		} else {
 			roomContainsPeer = true

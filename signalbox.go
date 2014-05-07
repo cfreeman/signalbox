@@ -55,12 +55,14 @@ func main() {
 			return
 		}
 
+		// Upgrade the HTTP server connection to the WebSocket protocol.
 		ws, err := websocket.Upgrade(w, r, nil, 1024, 1024)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 
+		// TODO: Read messages from socket continuously.
 		mt, message, err := ws.ReadMessage()
 		switch mt {
 		case websocket.TextMessage:
