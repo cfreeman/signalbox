@@ -103,6 +103,7 @@ func leave(messageBody []string,
 		return state, errors.New(fmt.Sprintf("Unable to leave, peer %s doesn't exist", source.Id))
 	}
 
+	// Only remove the room if it is empty.
 	room, exists := state.Rooms[destination.Room]
 	if !exists {
 		return state, errors.New(fmt.Sprintf("Unable to leave, room %s doesn't exist", destination.Room))

@@ -20,8 +20,7 @@
 package main
 
 import (
-	"code.google.com/p/go.net/websocket"
-	"fmt"
+	"github.com/gorilla/websocket"
 	"reflect"
 	"runtime"
 	"testing"
@@ -143,31 +142,33 @@ func TestAnnounceBroadcast(t *testing.T) {
 	go main()
 
 	url := "ws://localhost:3000"
-	a, _ := websocket.Dial(url, "", "http://a/")
-	_, err := a.Write([]byte("/announce|{\"id\":\"a\"}|{\"room\":\"test-room\"}"))
+	a, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil || a == nil {
+		t.Errorf("Bad socket")
+		t.Error(err)
+		return
+	}
+
+	err = a.WriteMessage(websocket.TextMessage, []byte("/announce|{\"id\":\"a\"}|{\"room\":\"test-room\"}"))
 	if err != nil {
 		t.Error(err)
 	}
 
-	b, _ := websocket.Dial(url, "", "http://b/")
-	_, err = b.Write([]byte("/announce|{\"id\":\"b\"}|{\"room\":\"test-room\"}"))
+	b, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil || b == nil {
+		t.Errorf("Bad Socket")
+		t.Error(err)
+		return
+	}
+	err = b.WriteMessage(websocket.TextMessage, []byte("/announce|{\"id\":\"b\"}|{\"room\":\"test-room\"}"))
 	if err != nil {
 		t.Error(err)
 	}
-
-	// TODO going to need a and b on seperate ports some how I think.
 
 	// Give the server a chance to respond
 	time.Sleep(50 * time.Millisecond)
 
-	msg := make([]byte, 512)
-	n, err := a.Read(msg)
-
-	if err != nil {
-		t.Error(err)
-	}
-	t.Error(fmt.Sprintf("Received: %s.\n", msg[:n]))
-	t.Error("foo")
-
+	//_, p, err := b.ReadMessage()
+	//t.Errorf(string(p))
 	//t.Error("foo")
 }
