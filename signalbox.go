@@ -20,8 +20,8 @@
 package main
 
 import (
-	"code.google.com/p/go.net/websocket"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"net/http"
 )
 
@@ -49,21 +49,33 @@ func main() {
 		make(map[string][]*Peer),
 		make(map[string][]*Room)}
 
-	http.Handle("/", websocket.Handler(func(ws *websocket.Conn) {
-		var message string
-		websocket.Message.Receive(ws, &message)
-
-		fmt.Printf("Message: %s\n", message)
-		action, messageBody, err := ParseMessage(message)
-		if err != nil {
-			fmt.Printf("Unable to parse message: %s!\n", message)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			http.Error(w, "Method not allowed", 405)
+			return
 		}
 
-		s, err = action(messageBody, ws, s)
+		ws, err := websocket.Upgrade(w, r, nil, 1024, 1024)
 		if err != nil {
-			fmt.Printf("Error unable to alter signal box")
+			fmt.Println(err)
+			return
 		}
-	}))
+
+		mt, message, err := ws.ReadMessage()
+		switch mt {
+		case websocket.TextMessage:
+			fmt.Printf("Message: %s\n", message)
+			action, messageBody, err := ParseMessage(string(message))
+			if err != nil {
+				fmt.Printf("Unable to parse message: %s!\n", message)
+			}
+
+			s, err = action(messageBody, ws, s)
+			if err != nil {
+				fmt.Printf("Error unable to alter signal box")
+			}
+		}
+	})
 
 	err := http.ListenAndServe(":3000", nil)
 	if err != nil {

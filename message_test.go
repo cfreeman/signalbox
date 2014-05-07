@@ -24,7 +24,6 @@ import (
 	"reflect"
 	"runtime"
 	"testing"
-	"time"
 )
 
 func TestUtf8Encoding(t *testing.T) {
@@ -165,10 +164,8 @@ func TestAnnounceBroadcast(t *testing.T) {
 		t.Error(err)
 	}
 
-	// Give the server a chance to respond
-	time.Sleep(50 * time.Millisecond)
-
-	//_, p, err := b.ReadMessage()
-	//t.Errorf(string(p))
-	//t.Error("foo")
+	_, message, err := a.ReadMessage()
+	if err != nil || string(message) != "/announce|{\"id\":\"b\"}|{\"room\":\"test-room\"}" {
+		t.Errorf("Peer A did not recieve the announce message for b.")
+	}
 }

@@ -20,10 +20,10 @@
 package main
 
 import (
-	"code.google.com/p/go.net/websocket"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"strings"
 	"unicode/utf8"
 )
@@ -63,7 +63,8 @@ func announce(messageBody []string,
 		if p.Id != peer.Id {
 			if p.socket != nil {
 				fmt.Printf("writing %s to %s\n", strings.Join(messageBody, "|"), p.Id)
-				_, err := p.socket.Write([]byte(strings.Join(messageBody, "|")))
+				p.socket.WriteMessage(websocket.TextMessage, []byte(strings.Join(messageBody, "|")))
+				//_, err := p.socket.Write([]byte(strings.Join(messageBody, "|")))
 				if err != nil {
 					fmt.Printf("Unable to write - %s\n", err)
 				}
