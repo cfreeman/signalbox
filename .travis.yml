@@ -1,4 +1,4 @@
 language: go
 
-go
+go:
   - 1.2
