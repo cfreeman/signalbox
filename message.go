@@ -28,15 +28,15 @@ import (
 	"unicode/utf8"
 )
 
-type messageFn func(messageBody []string,
+type messageFn func(message []string,
 	sourceSocket *websocket.Conn,
 	state SignalBox) (newState SignalBox, err error)
 
-func announce(messageBody []string,
+func announce(message []string,
 	sourceSocket *websocket.Conn,
 	state SignalBox) (newState SignalBox, err error) {
 
-	source, destination, err := ParsePeerAndRoom(messageBody)
+	source, destination, err := ParsePeerAndRoom(message)
 	if err != nil {
 		return state, err
 	}
@@ -58,12 +58,13 @@ func announce(messageBody []string,
 		room = state.Rooms[destination.Room]
 	}
 
+	// TODO: Tidy up this search loop. We are using a map instead of a slice.
 	roomContainsPeer := false
 	// Annouce the arrival to all the peers currently in the room.
 	for _, p := range state.RoomContains[room.Room] {
 		if p.Id != peer.Id {
 			if p.socket != nil {
-				p.socket.WriteMessage(websocket.TextMessage, []byte(strings.Join(messageBody, "|")))
+				p.socket.WriteMessage(websocket.TextMessage, []byte(strings.Join(message, "|")))
 			}
 		} else {
 			roomContainsPeer = true
@@ -76,6 +77,7 @@ func announce(messageBody []string,
 		state.RoomContains[room.Room][peer.Id] = peer
 	}
 
+	// TODO: Tidy up this search loop. We are using a map instead of a slice.
 	peerIsInRoom := false
 	for _, r := range state.PeerIsIn[peer.Id] {
 		if r.Room == room.Room {
@@ -92,11 +94,11 @@ func announce(messageBody []string,
 	return state, nil
 }
 
-func leave(messageBody []string,
+func leave(message []string,
 	sourceSocket *websocket.Conn,
 	state SignalBox) (newState SignalBox, err error) {
 
-	source, destination, err := ParsePeerAndRoom(messageBody)
+	source, destination, err := ParsePeerAndRoom(message)
 	if err != nil {
 		return state, err
 	}
@@ -111,23 +113,26 @@ func leave(messageBody []string,
 		return state, errors.New(fmt.Sprintf("Unable to leave, room %s doesn't exist", destination.Room))
 	}
 
-	fmt.Printf("%s is leaving %s\n", peer.Id, room.Room)
-	// TODO tell the other peers in the room that source is leaving.
-
-	delete(state.PeerIsIn[source.Id], destination.Room)
-	if len(state.PeerIsIn[source.Id]) == 0 {
-		delete(state.Peers, source.Id)
+	delete(state.PeerIsIn[peer.Id], destination.Room)
+	if len(state.PeerIsIn[peer.Id]) == 0 {
+		delete(state.Peers, peer.Id)
 	}
 
-	delete(state.RoomContains[destination.Room], source.Id)
+	delete(state.RoomContains[destination.Room], peer.Id)
+
 	if len(state.RoomContains[destination.Room]) == 0 {
 		delete(state.Rooms, destination.Room)
+	} else {
+		// Broadcast the departure to everyone else still in the room
+		for _, p := range state.RoomContains[room.Room] {
+			p.socket.WriteMessage(websocket.TextMessage, []byte(strings.Join(message, "|")))
+		}
 	}
 
 	return state, nil
 }
 
-func to(messageBody []string,
+func to(message []string,
 	sourceSocket *websocket.Conn,
 	state SignalBox) (newState SignalBox, err error) {
 
@@ -135,7 +140,7 @@ func to(messageBody []string,
 	return state, nil
 }
 
-func custom(messageBody []string,
+func custom(message []string,
 	sourceSocket *websocket.Conn,
 	state SignalBox) (newState SignalBox, err error) {
 

@@ -250,7 +250,5 @@ func TestLeave(t *testing.T) {
 		t.Errorf("Expected signalbox to contain the test room.")
 	}
 
-	// if state.RoomContains["test"] != ["a", "b"] {
-	// 	t.Errorf("Expected room test to contain a and b")
-	// }
+	// TODO: Finish testing the rest of the leave state.
 }
