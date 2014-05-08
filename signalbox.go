@@ -35,10 +35,10 @@ type Room struct {
 }
 
 type SignalBox struct {
-	Peers        map[string]*Peer   // All the peers currently inside this signalbox.
-	Rooms        map[string]*Room   // All the rooms currently inside this signalbox.
-	RoomContains map[string][]*Peer // All the peers currently inside a room.
-	PeerIsIn     map[string][]*Room // All the rooms a peer is currently inside.
+	Peers        map[string]*Peer            // All the peers currently inside this signalbox.
+	Rooms        map[string]*Room            // All the rooms currently inside this signalbox.
+	RoomContains map[string]map[string]*Peer // All the peers currently inside a room.
+	PeerIsIn     map[string]map[string]*Room // All the rooms a peer is currently inside.
 }
 
 func main() {
@@ -46,8 +46,8 @@ func main() {
 
 	s := SignalBox{make(map[string]*Peer),
 		make(map[string]*Room),
-		make(map[string][]*Peer),
-		make(map[string][]*Room)}
+		make(map[string]map[string]*Peer),
+		make(map[string]map[string]*Room)}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {

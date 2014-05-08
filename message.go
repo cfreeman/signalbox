@@ -70,7 +70,10 @@ func announce(messageBody []string,
 		}
 	}
 	if !roomContainsPeer {
-		state.RoomContains[room.Room] = append(state.RoomContains[room.Room], peer)
+		if state.RoomContains[room.Room] == nil {
+			state.RoomContains[room.Room] = make(map[string]*Peer)
+		}
+		state.RoomContains[room.Room][peer.Id] = peer
 	}
 
 	peerIsInRoom := false
@@ -80,7 +83,10 @@ func announce(messageBody []string,
 		}
 	}
 	if !peerIsInRoom {
-		state.PeerIsIn[peer.Id] = append(state.PeerIsIn[peer.Id], room)
+		if state.PeerIsIn[peer.Id] == nil {
+			state.PeerIsIn[peer.Id] = make(map[string]*Room)
+		}
+		state.PeerIsIn[peer.Id][room.Room] = room
 	}
 
 	return state, nil
@@ -100,17 +106,23 @@ func leave(messageBody []string,
 		return state, errors.New(fmt.Sprintf("Unable to leave, peer %s doesn't exist", source.Id))
 	}
 
-	// Only remove the room if it is empty.
 	room, exists := state.Rooms[destination.Room]
 	if !exists {
 		return state, errors.New(fmt.Sprintf("Unable to leave, room %s doesn't exist", destination.Room))
 	}
 
 	fmt.Printf("%s is leaving %s\n", peer.Id, room.Room)
-
 	// TODO tell the other peers in the room that source is leaving.
 
-	// TODO clean up our data structure.
+	delete(state.PeerIsIn[source.Id], destination.Room)
+	if len(state.PeerIsIn[source.Id]) == 0 {
+		delete(state.Peers, source.Id)
+	}
+
+	delete(state.RoomContains[destination.Room], source.Id)
+	if len(state.RoomContains[destination.Room]) == 0 {
+		delete(state.Rooms, destination.Room)
+	}
 
 	return state, nil
 }
