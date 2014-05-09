@@ -102,11 +102,13 @@ func leave(message []string,
 	delete(state.PeerIsIn[peer.Id], destination.Room)
 	if len(state.PeerIsIn[peer.Id]) == 0 {
 		delete(state.Peers, peer.Id)
+		delete(state.PeerIsIn, peer.Id)
 	}
 
 	delete(state.RoomContains[destination.Room], peer.Id)
 	if len(state.RoomContains[destination.Room]) == 0 {
 		delete(state.Rooms, destination.Room)
+		delete(state.RoomContains, destination.Room)
 	} else {
 		// Broadcast the departure to everyone else still in the room
 		for _, p := range state.RoomContains[room.Room] {

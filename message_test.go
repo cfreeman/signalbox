@@ -191,6 +191,11 @@ func TestLeave(t *testing.T) {
 		t.Errorf("Unexpected error parsing leave message for a")
 	}
 
+	leaveA2, message5, err := ParseMessage("/leave|{\"id\":\"a\"}|{\"room\":\"test\"}")
+	if err != nil {
+		t.Errorf("Unexpected error parsing leave message for a")
+	}
+
 	state := SignalBox{make(map[string]*Peer),
 		make(map[string]*Room),
 		make(map[string]map[string]*Peer),
@@ -250,5 +255,60 @@ func TestLeave(t *testing.T) {
 		t.Errorf("Expected signalbox to contain the test room.")
 	}
 
-	// TODO: Finish testing the rest of the leave state.
+	if len(state.Peers) != 2 {
+		t.Errorf("Expected to have two peers left within the signal box.")
+	}
+
+	if state.RoomContains["test"]["a"] != state.Peers["a"] {
+		t.Errorf("Expected room test to contain 'a'")
+	}
+
+	if state.RoomContains["test"]["b"] != state.Peers["b"] {
+		t.Errorf("Expected room test to contain 'b'")
+	}
+
+	if len(state.PeerIsIn["a"]) != 1 {
+		t.Errorf("Expected peer 'a' to be in only one room.")
+	}
+
+	if state.PeerIsIn["a"]["test"] != state.Rooms["test"] {
+		t.Errorf("Expected peer 'a' to be within room test.")
+	}
+
+	state, err = leaveA2(message5, nil, state)
+
+	if len(state.Rooms) != 1 {
+		t.Errorf("Expected only one room to be left within the signal box.")
+	}
+
+	_, exists = state.Rooms["test"]
+	if !exists {
+		t.Errorf("Expected signalbox to contain the test room.")
+	}
+
+	if len(state.Peers) != 1 {
+		t.Errorf("Expected to have one peer left within the signal box.")
+	}
+
+	if state.Peers["b"].Id != "b" {
+		t.Errorf("Expected peer b to be within the signalbox still.")
+	}
+
+	_, exists = state.PeerIsIn["a"]
+	if exists {
+		t.Errorf("Expected peer 'a' not to be around anymore.")
+	}
+
+	if len(state.RoomContains) != 1 {
+		t.Errorf("Expected room contains to only have 'test' left.")
+	}
+
+	if len(state.RoomContains["test"]) != 1 {
+		t.Errorf("Expected test room to only contain one peer.")
+	}
+
+	_, exists = state.RoomContains["test"]["a"]
+	if exists {
+		t.Errorf("Expected peer 'a' not to be in room 'test' anymore")
+	}
 }
