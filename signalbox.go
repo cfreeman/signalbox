@@ -82,6 +82,7 @@ func signalbox(msg chan Message) {
 }
 
 func main() {
+	// TODO: Use golang logging rather than print statements everywhere.
 	fmt.Printf("SignalBox Started!\n")
 	msg := make(chan Message)
 	go signalbox(msg)

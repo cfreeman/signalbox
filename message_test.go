@@ -68,7 +68,7 @@ func TestParseMessage(t *testing.T) {
 		t.Errorf("incorrectly parsed the parts to the body of the message")
 	}
 
-	// TODO test malformed messages.
+	// TODO: test malformed messages.
 }
 
 func TestParsePeerAndRoom(t *testing.T) {
@@ -312,3 +312,5 @@ func TestLeave(t *testing.T) {
 		t.Errorf("Expected peer 'a' not to be in room 'test' anymore")
 	}
 }
+
+// TODO: Test leave message broadcasting.
