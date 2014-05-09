@@ -41,13 +41,50 @@ type SignalBox struct {
 	PeerIsIn     map[string]map[string]*Room // All the rooms a peer is currently inside.
 }
 
-func main() {
-	fmt.Printf("SignalBox Started!\n")
+type Message struct {
+	msgSocket *websocket.Conn // The socket that the message was broadcast across.
+	msgBody   string          // The body of the broadcasted message.
+	msgType   int             // The type of the broadcasted message.
+}
 
+func startMessagePump(msg chan Message, ws *websocket.Conn) {
+	for {
+		mt, message, err := ws.ReadMessage()
+		if err == nil {
+			msg <- Message{ws, string(message), mt}
+		}
+	}
+}
+
+func signalbox(msg chan Message) {
 	s := SignalBox{make(map[string]*Peer),
 		make(map[string]*Room),
 		make(map[string]map[string]*Peer),
 		make(map[string]map[string]*Room)}
+
+	for {
+		m := <-msg
+
+		switch m.msgType {
+		case websocket.TextMessage:
+			fmt.Printf("Message: %s\n", m.msgBody)
+			action, messageBody, err := ParseMessage(m.msgBody)
+			if err != nil {
+				fmt.Printf("Unable to parse message: %s!\n", m.msgBody)
+			}
+
+			s, err = action(messageBody, m.msgSocket, s)
+			if err != nil {
+				fmt.Printf("Error unable to alter signal box")
+			}
+		}
+	}
+}
+
+func main() {
+	fmt.Printf("SignalBox Started!\n")
+	msg := make(chan Message)
+	go signalbox(msg)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
@@ -62,21 +99,8 @@ func main() {
 			return
 		}
 
-		// TODO: Read messages from socket continuously.
-		mt, message, err := ws.ReadMessage()
-		switch mt {
-		case websocket.TextMessage:
-			fmt.Printf("Message: %s\n", message)
-			action, messageBody, err := ParseMessage(string(message))
-			if err != nil {
-				fmt.Printf("Unable to parse message: %s!\n", message)
-			}
-
-			s, err = action(messageBody, ws, s)
-			if err != nil {
-				fmt.Printf("Error unable to alter signal box")
-			}
-		}
+		// Start pumping messages from this websocket into the signal box.
+		go startMessagePump(msg, ws)
 	})
 
 	err := http.ListenAndServe(":3000", nil)
