@@ -1,7 +1,7 @@
 signalbox
 =========
 
-An experimental Web-RTC signalling server written in Go. Designed to be compatible with [signalling protocol](http://rtc.io/signalling-protocol.html#0) used with [rtc.io](http://rtc.io/). 
+An experimental Web-RTC signalling server written in Go. Designed to be compatible with the [signalling protocol](http://rtc.io/signalling-protocol.html#0) used with [rtc.io](http://rtc.io/).
 
 
 [![Build Status](https://travis-ci.org/cfreeman/signalbox.svg?branch=master)](https://travis-ci.org/cfreeman/signalbox)

@@ -58,37 +58,23 @@ func announce(message []string,
 		room = state.Rooms[destination.Room]
 	}
 
-	// TODO: Tidy up this search loop. We are using a map instead of a slice.
-	roomContainsPeer := false
+	if state.PeerIsIn[peer.Id] == nil {
+		state.PeerIsIn[peer.Id] = make(map[string]*Room)
+	}
+	state.PeerIsIn[peer.Id][room.Room] = room
+
+	if state.RoomContains[room.Room] == nil {
+		state.RoomContains[room.Room] = make(map[string]*Peer)
+	}
+	state.RoomContains[room.Room][peer.Id] = peer
+
 	// Annouce the arrival to all the peers currently in the room.
 	for _, p := range state.RoomContains[room.Room] {
 		if p.Id != peer.Id {
 			if p.socket != nil {
 				p.socket.WriteMessage(websocket.TextMessage, []byte(strings.Join(message, "|")))
 			}
-		} else {
-			roomContainsPeer = true
 		}
-	}
-	if !roomContainsPeer {
-		if state.RoomContains[room.Room] == nil {
-			state.RoomContains[room.Room] = make(map[string]*Peer)
-		}
-		state.RoomContains[room.Room][peer.Id] = peer
-	}
-
-	// TODO: Tidy up this search loop. We are using a map instead of a slice.
-	peerIsInRoom := false
-	for _, r := range state.PeerIsIn[peer.Id] {
-		if r.Room == room.Room {
-			peerIsInRoom = true
-		}
-	}
-	if !peerIsInRoom {
-		if state.PeerIsIn[peer.Id] == nil {
-			state.PeerIsIn[peer.Id] = make(map[string]*Room)
-		}
-		state.PeerIsIn[peer.Id][room.Room] = room
 	}
 
 	return state, nil
@@ -119,13 +105,14 @@ func leave(message []string,
 	}
 
 	delete(state.RoomContains[destination.Room], peer.Id)
-
 	if len(state.RoomContains[destination.Room]) == 0 {
 		delete(state.Rooms, destination.Room)
 	} else {
 		// Broadcast the departure to everyone else still in the room
 		for _, p := range state.RoomContains[room.Room] {
-			p.socket.WriteMessage(websocket.TextMessage, []byte(strings.Join(message, "|")))
+			if p.socket != nil {
+				p.socket.WriteMessage(websocket.TextMessage, []byte(strings.Join(message, "|")))
+			}
 		}
 	}
 
