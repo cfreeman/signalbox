@@ -20,8 +20,8 @@
 package main
 
 import (
-	"fmt"
 	"github.com/gorilla/websocket"
+	"log"
 	"net/http"
 )
 
@@ -67,23 +67,22 @@ func signalbox(msg chan Message) {
 
 		switch m.msgType {
 		case websocket.TextMessage:
-			fmt.Printf("Message: %s\n", m.msgBody)
+			log.Printf("Message: %s\n", m.msgBody)
 			action, messageBody, err := ParseMessage(m.msgBody)
 			if err != nil {
-				fmt.Printf("Unable to parse message: %s!\n", m.msgBody)
+				log.Printf("Unable to parse message: %s!\n", m.msgBody)
 			}
 
 			s, err = action(messageBody, m.msgSocket, s)
 			if err != nil {
-				fmt.Printf("Error unable to alter signal box")
+				log.Printf("Error unable to alter signal box")
 			}
 		}
 	}
 }
 
 func main() {
-	// TODO: Use golang logging rather than print statements everywhere.
-	fmt.Printf("SignalBox Started!\n")
+	log.Printf("SignalBox Started!\n")
 	msg := make(chan Message)
 	go signalbox(msg)
 
@@ -96,7 +95,7 @@ func main() {
 		// Upgrade the HTTP server connection to the WebSocket protocol.
 		ws, err := websocket.Upgrade(w, r, nil, 1024, 1024)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			return
 		}
 

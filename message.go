@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"log"
 	"strings"
 	"unicode/utf8"
 )
@@ -43,7 +44,7 @@ func announce(message []string,
 
 	peer, exists := state.Peers[source.Id]
 	if !exists {
-		fmt.Printf("Adding Peer: %s\n", source.Id)
+		log.Printf("Adding Peer: %s\n", source.Id)
 		state.Peers[source.Id] = new(Peer)
 		state.Peers[source.Id].Id = source.Id
 		state.Peers[source.Id].socket = sourceSocket // Inject a reference to the websocket within the new peer.
@@ -52,7 +53,7 @@ func announce(message []string,
 
 	room, exists := state.Rooms[destination.Room]
 	if !exists {
-		fmt.Printf("Adding Room: %s\n", destination.Room)
+		log.Printf("Adding Room: %s\n", destination.Room)
 		state.Rooms[destination.Room] = new(Room)
 		state.Rooms[destination.Room].Room = destination.Room
 		room = state.Rooms[destination.Room]
@@ -125,7 +126,7 @@ func to(message []string,
 	sourceSocket *websocket.Conn,
 	state SignalBox) (newState SignalBox, err error) {
 
-	fmt.Printf("to message\n")
+	log.Printf("to message\n")
 	return state, nil
 }
 
@@ -133,7 +134,7 @@ func custom(message []string,
 	sourceSocket *websocket.Conn,
 	state SignalBox) (newState SignalBox, err error) {
 
-	fmt.Printf("custom message\n")
+	log.Printf("custom message\n")
 	return state, nil
 }
 
