@@ -71,10 +71,8 @@ func announce(message []string,
 
 	// Annouce the arrival to all the peers currently in the room.
 	for _, p := range state.RoomContains[room.Room] {
-		if p.Id != peer.Id {
-			if p.socket != nil {
-				p.socket.WriteMessage(websocket.TextMessage, []byte(strings.Join(message, "|")))
-			}
+		if p.Id != peer.Id && p.socket != nil {
+			p.socket.WriteMessage(websocket.TextMessage, []byte(strings.Join(message, "|")))
 		}
 	}
 
@@ -127,7 +125,7 @@ func to(message []string,
 	state SignalBox) (newState SignalBox, err error) {
 
 	if len(message) < 3 {
-		return state, errors.New("Not enouth parts in the message to send a PM.")
+		return state, errors.New("Not enouth parts to personalised message")
 	}
 
 	d, exists := state.Peers[message[1]]
@@ -146,7 +144,29 @@ func custom(message []string,
 	sourceSocket *websocket.Conn,
 	state SignalBox) (newState SignalBox, err error) {
 
-	log.Printf("custom message\n")
+	source := Peer{}
+	if len(message) < 2 {
+		return state, errors.New("Not enough parts to custom message")
+	}
+
+	err = json.Unmarshal([]byte(message[1]), &source)
+	if err != nil {
+		return state, err
+	}
+
+	peer, exists := state.Peers[source.Id]
+	if !exists {
+		return state, nil
+	}
+
+	for _, r := range state.PeerIsIn[peer.Id] {
+		for _, p := range state.RoomContains[r.Room] {
+			if p.Id != peer.Id && p.socket != nil {
+				p.socket.WriteMessage(websocket.TextMessage, []byte(strings.Join(message, "|")))
+			}
+		}
+	}
+
 	return state, nil
 }
 

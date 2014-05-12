@@ -186,7 +186,7 @@ func TestAnnounceBroadcast(t *testing.T) {
 	}
 }
 
-func TestToMessage(t *testing.T) {
+func TestMessage(t *testing.T) {
 	a, err := connectPeer("a1", "test-to-message")
 	if err != nil {
 		t.Error(err)
@@ -208,7 +208,8 @@ func TestToMessage(t *testing.T) {
 	}
 	time.Sleep(2 * time.Millisecond)
 
-	err = a.WriteMessage(websocket.TextMessage, []byte("/to|b2|/hello"))
+	// Test custom Message.
+	err = a.WriteMessage(websocket.TextMessage, []byte("/hello|{\"id\":\"a1\"}"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -216,13 +217,32 @@ func TestToMessage(t *testing.T) {
 
 	b.ReadMessage() // discard the c2 announce message.
 	_, b_message, err := b.ReadMessage()
-	if err != nil || string(b_message) != "/to|b2|/hello" {
+	if err != nil || string(b_message) != "/hello|{\"id\":\"a1\"}" {
+		t.Errorf(string(b_message))
+		t.Errorf("Peer B did not recieve the message from A.")
+	}
+
+	_, c_message, err := c.ReadMessage()
+	if err != nil || string(c_message) != "/hello|{\"id\":\"a1\"}" {
+		t.Errorf(string(c_message))
+		t.Errorf("Peer C did not recieve the message from A.")
+	}
+
+	// Test TO Message.
+	err = a.WriteMessage(websocket.TextMessage, []byte("/to|b2|/hello|{\"id\":\"a1\"}"))
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(2 * time.Millisecond)
+
+	_, b_message, err = b.ReadMessage()
+	if err != nil || string(b_message) != "/to|b2|/hello|{\"id\":\"a1\"}" {
 		t.Errorf(string(b_message))
 		t.Errorf("Peer B did not recieve the personal message from A.")
 	}
 
 	c.SetReadDeadline(time.Now().Add(4 * time.Millisecond))
-	_, c_message, err := c.ReadMessage()
+	_, c_message, err = c.ReadMessage()
 	if string(c_message) != "" {
 		t.Errorf("Peer C was not expecting any messages.")
 	}
