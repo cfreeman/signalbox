@@ -47,7 +47,7 @@ type Message struct {
 	msgType   int             // The type of the broadcasted message.
 }
 
-func startMessagePump(msg chan Message, ws *websocket.Conn) {
+func messagePump(msg chan Message, ws *websocket.Conn) {
 	for {
 		mt, message, err := ws.ReadMessage()
 		if err == nil {
@@ -100,7 +100,7 @@ func main() {
 		}
 
 		// Start pumping messages from this websocket into the signal box.
-		go startMessagePump(msg, ws)
+		go messagePump(msg, ws)
 	})
 
 	err := http.ListenAndServe(":3000", nil)

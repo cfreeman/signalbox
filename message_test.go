@@ -168,6 +168,16 @@ func TestAnnounceBroadcast(t *testing.T) {
 	if err != nil || string(message) != "/announce|{\"id\":\"b\"}|{\"room\":\"test-room\"}" {
 		t.Errorf("Peer A did not recieve the announce message for b.")
 	}
+
+	err = a.WriteMessage(websocket.TextMessage, []byte("/leave|{\"id\":\"a\"}|{\"room\":\"test-room\"}"))
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, message, err = b.ReadMessage()
+	if err != nil || string(message) != "/leave|{\"id\":\"a\"}|{\"room\":\"test-room\"}" {
+		t.Errorf("Peer B did not recieve the leave message for a.")
+	}
 }
 
 func TestLeave(t *testing.T) {
@@ -312,5 +322,3 @@ func TestLeave(t *testing.T) {
 		t.Errorf("Expected peer 'a' not to be in room 'test' anymore")
 	}
 }
-
-// TODO: Test leave message broadcasting.
