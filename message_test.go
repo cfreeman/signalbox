@@ -20,10 +20,12 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gorilla/websocket"
 	"reflect"
 	"runtime"
 	"testing"
+	"time"
 )
 
 func TestUtf8Encoding(t *testing.T) {
@@ -137,31 +139,35 @@ func TestAnnounce(t *testing.T) {
 	}
 }
 
+func connectPeer(id string, room string) (*websocket.Conn, error) {
+	url := "ws://localhost:3000"
+	res, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil || res == nil {
+		return nil, err
+	}
+
+	connect := fmt.Sprintf("/announce|{\"id\":\"%s\"}|{\"room\":\"%s\"}", id, room)
+	err = res.WriteMessage(websocket.TextMessage, []byte(connect))
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func TestAnnounceBroadcast(t *testing.T) {
 	go main()
 
-	url := "ws://localhost:3000"
-	a, _, err := websocket.DefaultDialer.Dial(url, nil)
-	if err != nil || a == nil {
-		t.Errorf("Bad socket")
+	a, err := connectPeer("a", "test-room")
+	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	err = a.WriteMessage(websocket.TextMessage, []byte("/announce|{\"id\":\"a\"}|{\"room\":\"test-room\"}"))
+	b, err := connectPeer("b", "test-room")
 	if err != nil {
-		t.Error(err)
-	}
-
-	b, _, err := websocket.DefaultDialer.Dial(url, nil)
-	if err != nil || b == nil {
-		t.Errorf("Bad Socket")
 		t.Error(err)
 		return
-	}
-	err = b.WriteMessage(websocket.TextMessage, []byte("/announce|{\"id\":\"b\"}|{\"room\":\"test-room\"}"))
-	if err != nil {
-		t.Error(err)
 	}
 
 	_, message, err := a.ReadMessage()
@@ -177,6 +183,48 @@ func TestAnnounceBroadcast(t *testing.T) {
 	_, message, err = b.ReadMessage()
 	if err != nil || string(message) != "/leave|{\"id\":\"a\"}|{\"room\":\"test-room\"}" {
 		t.Errorf("Peer B did not recieve the leave message for a.")
+	}
+}
+
+func TestToMessage(t *testing.T) {
+	a, err := connectPeer("a1", "test-to-message")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	time.Sleep(2 * time.Millisecond)
+
+	b, err := connectPeer("b2", "test-to-message")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	time.Sleep(2 * time.Millisecond)
+
+	c, err := connectPeer("c2", "test-to-message")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	time.Sleep(2 * time.Millisecond)
+
+	err = a.WriteMessage(websocket.TextMessage, []byte("/to|b2|/hello"))
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(2 * time.Millisecond)
+
+	b.ReadMessage() // discard the c2 announce message.
+	_, b_message, err := b.ReadMessage()
+	if err != nil || string(b_message) != "/to|b2|/hello" {
+		t.Errorf(string(b_message))
+		t.Errorf("Peer B did not recieve the personal message from A.")
+	}
+
+	c.SetReadDeadline(time.Now().Add(4 * time.Millisecond))
+	_, c_message, err := c.ReadMessage()
+	if string(c_message) != "" {
+		t.Errorf("Peer C was not expecting any messages.")
 	}
 }
 

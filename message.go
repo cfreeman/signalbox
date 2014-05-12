@@ -126,7 +126,19 @@ func to(message []string,
 	sourceSocket *websocket.Conn,
 	state SignalBox) (newState SignalBox, err error) {
 
-	log.Printf("to message\n")
+	if len(message) < 3 {
+		return state, errors.New("Not enouth parts in the message to send a PM.")
+	}
+
+	d, exists := state.Peers[message[1]]
+	if !exists {
+		return state, nil
+	}
+
+	if d.socket != nil {
+		d.socket.WriteMessage(websocket.TextMessage, []byte(strings.Join(message, "|")))
+	}
+
 	return state, nil
 }
 
@@ -138,17 +150,17 @@ func custom(message []string,
 	return state, nil
 }
 
-func ParsePeerAndRoom(messageBody []string) (source Peer, destination Room, err error) {
-	if len(messageBody) < 3 {
+func ParsePeerAndRoom(message []string) (source Peer, destination Room, err error) {
+	if len(message) < 3 {
 		return Peer{}, Room{}, errors.New("Not enough parts in the message body to parse peer and room.")
 	}
 
-	err = json.Unmarshal([]byte(messageBody[1]), &source)
+	err = json.Unmarshal([]byte(message[1]), &source)
 	if err != nil {
 		return Peer{}, Room{}, err
 	}
 
-	err = json.Unmarshal([]byte(messageBody[2]), &destination)
+	err = json.Unmarshal([]byte(message[2]), &destination)
 	if err != nil {
 		return Peer{}, Room{}, err
 	}
