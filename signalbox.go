@@ -70,15 +70,19 @@ func signalbox(msg chan Message) {
 			log.Printf("Message: %s\n", m.msgBody)
 			action, messageBody, err := ParseMessage(m.msgBody)
 			if err != nil {
-				log.Printf("Unable to parse message: %s!\n", m.msgBody)
+				continue
 			}
 
+			log.Printf("Action!")
 			s, err = action(messageBody, m.msgSocket, s)
 			if err != nil {
 				log.Printf("Error unable to alter signal box")
+				log.Print(err)
 			}
 		}
 	}
+
+	// TODO: Leave messages on socket closes.
 }
 
 func main() {

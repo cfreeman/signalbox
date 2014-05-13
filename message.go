@@ -177,6 +177,7 @@ func ParsePeerAndRoom(message []string) (source Peer, destination Room, err erro
 
 	err = json.Unmarshal([]byte(message[1]), &source)
 	if err != nil {
+		log.Print(err)
 		return Peer{}, Room{}, err
 	}
 
@@ -194,20 +195,25 @@ func ParseMessage(message string) (action messageFn, messageBody []string, err e
 		return nil, nil, errors.New("Message is not utf-8 encoded")
 	}
 
-	// Message parts are delimited by a pipe (|) character
-	parts := strings.Split(message, "|")
+	r := strings.NewReplacer("\"", "", "\\\"", "\"")
+	parts := strings.Split(r.Replace(message), "|")
 
 	switch parts[0] {
 	case "/announce":
+		log.Printf("Announce.")
 		return announce, parts, nil
 
 	case "/leave":
+		log.Printf("Leave.")
 		return leave, parts, nil
 
 	case "/to":
+		log.Printf("To.")
 		return to, parts, nil
 
 	default:
+		log.Printf("Custom.")
 		return custom, parts, nil
 	}
+
 }
