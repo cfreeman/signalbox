@@ -170,7 +170,7 @@ func custom(message []string,
 	for _, r := range state.PeerIsIn[peer.Id] {
 		for _, p := range state.RoomContains[r.Room] {
 			if p.Id != peer.Id && p.socket != nil {
-				p.socket.WriteMessage(websocket.TextMessage, []byte(strings.Join(message, "|")))
+				writeMessage(p.socket, message)
 			}
 		}
 	}
