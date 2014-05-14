@@ -178,6 +178,12 @@ func custom(message []string,
 	return state, nil
 }
 
+func ignore(message []string,
+	sourceSocket *websocket.Conn,
+	state SignalBox) (newState SignalBox, err error) {
+	return state, nil
+}
+
 func ParsePeerAndRoom(message []string) (source Peer, destination Room, err error) {
 	if len(message) < 3 {
 		return Peer{}, Room{}, errors.New("Not enough parts in the message body to parse peer and room.")
@@ -205,22 +211,26 @@ func ParseMessage(message string) (action messageFn, messageBody []string, err e
 
 	parts := strings.Split(message, "|")
 
-	switch parts[0] {
-	case "/announce":
-		log.Printf("Announce.")
-		return announce, parts, nil
+	// rtc.io commands start with "/" - ignore everything else.
+	if message[0:1] == "/" {
+		switch parts[0] {
+		case "/announce":
+			log.Printf("Announce.")
+			return announce, parts, nil
 
-	case "/leave":
-		log.Printf("Leave.")
-		return leave, parts, nil
+		case "/leave":
+			log.Printf("Leave.")
+			return leave, parts, nil
 
-	case "/to":
-		log.Printf("To.")
-		return to, parts, nil
+		case "/to":
+			log.Printf("To.")
+			return to, parts, nil
 
-	default:
-		log.Printf("Custom.")
-		return custom, parts, nil
+		default:
+			log.Printf("Custom.")
+			return custom, parts, nil
+		}
 	}
 
+	return ignore, parts, nil
 }
