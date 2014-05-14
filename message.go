@@ -72,7 +72,7 @@ func announce(message []string,
 	// Annouce the arrival to all the peers currently in the room.
 	for _, p := range state.RoomContains[room.Room] {
 		if p.Id != peer.Id && p.socket != nil {
-			p.socket.WriteMessage(websocket.TextMessage, []byte(strings.Join(message, "|")))
+			writeMessage(p.socket, message)
 		}
 	}
 
@@ -112,7 +112,7 @@ func leave(message []string,
 		// Broadcast the departure to everyone else still in the room
 		for _, p := range state.RoomContains[room.Room] {
 			if p.socket != nil {
-				p.socket.WriteMessage(websocket.TextMessage, []byte(strings.Join(message, "|")))
+				writeMessage(p.socket, message)
 			}
 		}
 	}
@@ -134,10 +134,18 @@ func to(message []string,
 	}
 
 	if d.socket != nil {
-		d.socket.WriteMessage(websocket.TextMessage, []byte(strings.Join(message, "|")))
+		writeMessage(d.socket, message)
 	}
 
 	return state, nil
+}
+
+func writeMessage(ws *websocket.Conn, message []string) {
+	b, err := json.Marshal(strings.Join(message, "|"))
+	if err == nil {
+		log.Printf("Writing %s\n", string(b))
+		ws.WriteMessage(websocket.TextMessage, b)
+	}
 }
 
 func custom(message []string,
@@ -195,8 +203,7 @@ func ParseMessage(message string) (action messageFn, messageBody []string, err e
 		return nil, nil, errors.New("Message is not utf-8 encoded")
 	}
 
-	r := strings.NewReplacer("\"", "", "\\\"", "\"")
-	parts := strings.Split(r.Replace(message), "|")
+	parts := strings.Split(message, "|")
 
 	switch parts[0] {
 	case "/announce":

@@ -20,6 +20,7 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
@@ -49,9 +50,11 @@ type Message struct {
 
 func messagePump(msg chan Message, ws *websocket.Conn) {
 	for {
-		mt, message, err := ws.ReadMessage()
+		mt, data, err := ws.ReadMessage()
 		if err == nil {
-			msg <- Message{ws, string(message), mt}
+			var message string
+			json.Unmarshal(data, &message)
+			msg <- Message{ws, message, mt}
 		}
 	}
 }
@@ -73,7 +76,6 @@ func signalbox(msg chan Message) {
 				continue
 			}
 
-			log.Printf("Action!")
 			s, err = action(messageBody, m.msgSocket, s)
 			if err != nil {
 				log.Printf("Error unable to alter signal box")
@@ -87,6 +89,7 @@ func signalbox(msg chan Message) {
 
 func main() {
 	log.Printf("SignalBox Started!\n")
+
 	msg := make(chan Message)
 	go signalbox(msg)
 
@@ -112,3 +115,5 @@ func main() {
 		panic("ListenAndServe: " + err.Error())
 	}
 }
+
+// TODO: Message pumping is soaking up 100% CPU. Need to pump a little more gently.
