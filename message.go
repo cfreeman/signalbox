@@ -100,12 +100,14 @@ func leave(message []string,
 
 	delete(state.PeerIsIn[peer.Id], destination.Room)
 	if len(state.PeerIsIn[peer.Id]) == 0 {
+		log.Printf("Removing Peer: %s\n", peer.Id)
 		delete(state.Peers, peer.Id)
 		delete(state.PeerIsIn, peer.Id)
 	}
 
 	delete(state.RoomContains[destination.Room], peer.Id)
 	if len(state.RoomContains[destination.Room]) == 0 {
+		log.Printf("Removing Room: %s\n", destination.Room)
 		delete(state.Rooms, destination.Room)
 		delete(state.RoomContains, destination.Room)
 	} else {
@@ -125,7 +127,7 @@ func to(message []string,
 	state SignalBox) (newState SignalBox, err error) {
 
 	if len(message) < 3 {
-		return state, errors.New("Not enouth parts to personalised message")
+		return state, errors.New("Not enouth parts for personalised 'to' message")
 	}
 
 	d, exists := state.Peers[message[1]]

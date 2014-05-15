@@ -28,7 +28,7 @@ import (
 
 type Peer struct {
 	Id     string          // The unique identifier of the peer.
-	socket *websocket.Conn //The socket for writing to the peer.
+	socket *websocket.Conn // The socket for writing to the peer.
 }
 
 type Room struct {
@@ -45,17 +45,34 @@ type SignalBox struct {
 type Message struct {
 	msgSocket *websocket.Conn // The socket that the message was broadcast across.
 	msgBody   string          // The body of the broadcasted message.
-	msgType   int             // The type of the broadcasted message.
 }
 
 func messagePump(msg chan Message, ws *websocket.Conn) {
 	for {
-		mt, data, err := ws.ReadMessage()
-		if err == nil {
-			var message string
-			json.Unmarshal(data, &message)
-			msg <- Message{ws, message, mt}
+		_, reader, err := ws.NextReader()
+		if err != nil {
+			log.Printf("messagePump error: Unable to get next reader.")
+			log.Print(err)
+
+			// TODO: Teardown peer from signalbox.
+			// TODO: Need to handle websocket pings to see what is alive.
+			// TODO: Configuration file.
+			// TODO: Test when message is longer than will fit in buffer.
+			return
 		}
+
+		buffer := make([]byte, 2048)
+		n, err := reader.Read(buffer)
+		if err != nil {
+			log.Printf("messagePump error: Unable to read from websocket.")
+			log.Print(err)
+			continue
+		}
+
+		// Pump the new message into the signalbox.
+		var message string
+		json.Unmarshal(buffer[0:n], &message)
+		msg <- Message{ws, message}
 	}
 }
 
@@ -68,19 +85,18 @@ func signalbox(msg chan Message) {
 	for {
 		m := <-msg
 
-		switch m.msgType {
-		case websocket.TextMessage:
-			log.Printf("Message: %s\n", m.msgBody)
-			action, messageBody, err := ParseMessage(m.msgBody)
-			if err != nil {
-				continue
-			}
+		log.Printf("Message: %s\n", m.msgBody)
+		action, messageBody, err := ParseMessage(m.msgBody)
+		if err != nil {
+			log.Printf("signalbox error: Unable to parse message.")
+			log.Print(err)
+			continue
+		}
 
-			s, err = action(messageBody, m.msgSocket, s)
-			if err != nil {
-				log.Printf("Error unable to alter signal box")
-				log.Print(err)
-			}
+		s, err = action(messageBody, m.msgSocket, s)
+		if err != nil {
+			log.Printf("signalbox error: Unable to update state.")
+			log.Print(err)
 		}
 	}
 
@@ -88,7 +104,7 @@ func signalbox(msg chan Message) {
 }
 
 func main() {
-	log.Printf("SignalBox Started!\n")
+	log.Printf("Started SignalBox\n")
 
 	msg := make(chan Message)
 	go signalbox(msg)
@@ -115,5 +131,3 @@ func main() {
 		panic("ListenAndServe: " + err.Error())
 	}
 }
-
-// TODO: Message pumping is soaking up 100% CPU. Need to pump a little more gently.
