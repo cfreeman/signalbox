@@ -82,25 +82,23 @@ var _ = Describe("Message", func() {
 
 		// TODO: Test Malformed messages.
 	})
+
+	Context("ParsePeerAndRoom", func() {
+		It("should return an error when their is not enough parts to a message", func() {
+			_, message, _ := ParseMessage("/foo")
+			_, _, err := ParsePeerAndRoom(message)
+			Ω(err).ShouldNot(BeNil())
+		})
+
+		It("should parse source id and room", func() {
+			_, message, _ := ParseMessage("/announce|{\"id\":\"abc\"}|{\"room\":\"test\"}")
+			source, destination, err := ParsePeerAndRoom(message)
+			Ω(err).Should(BeNil())
+			Ω(source.Id).Should(Equal("abc"))
+			Ω(destination.Room).Should(Equal("test"))
+		})
+	})
 })
-
-// func TestParsePeerAndRoom(t *testing.T) {
-// 	_, message, _ := ParseMessage("/foo")
-// 	source, destination, err := ParsePeerAndRoom(message)
-// 	if err == nil {
-// 		t.Errorf("Expected pre-condition error parsing peer and room.")
-// 	}
-
-// 	_, message, _ = ParseMessage("/announce|{\"id\":\"abc\"}|{\"room\":\"test\"}")
-// 	source, destination, err = ParsePeerAndRoom(message)
-// 	if err != nil {
-// 		t.Errorf("Unexpected error parsing peer and room from message")
-// 	}
-
-// 	if source.Id != "abc" || destination.Room != "test" {
-// 		t.Errorf("Source or destination incorrectly parsed")
-// 	}
-// }
 
 // func TestAnnounce(t *testing.T) {
 // 	action, message, err := ParseMessage("/announce|{\"id\":\"a\"}|{\"room\":\"test\"}")
