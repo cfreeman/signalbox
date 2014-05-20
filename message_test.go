@@ -103,8 +103,20 @@ var _ = Describe("Message", func() {
 		var announceAAct messageFn
 		var announceAMsg []string
 
+		var announceA2Act messageFn
+		var announceA2Msg []string
+
+		var leaveAAct messageFn
+		var leaveAMsg []string
+
+		var leaveA2Act messageFn
+		var leaveA2Msg []string
+
 		var announceBAct messageFn
 		var announceBMsg []string
+
+		var leaveBAct messageFn
+		var leaveBMsg []string
 
 		BeforeEach(func() {
 			var err error
@@ -116,13 +128,27 @@ var _ = Describe("Message", func() {
 			announceAAct, announceAMsg, err = ParseMessage("/announce|{\"id\":\"a\"}|{\"room\":\"test\"}")
 			Ω(err).Should(BeNil())
 
+			announceA2Act, announceA2Msg, err = ParseMessage("/announce|{\"id\":\"a\"}|{\"room\":\"test2\"}")
+			Ω(err).Should(BeNil())
+
+			leaveAAct, leaveAMsg, err = ParseMessage("/leave|{\"id\":\"a\"}|{\"room\":\"test\"}")
+			Ω(err).Should(BeNil())
+
+			leaveA2Act, leaveA2Msg, err = ParseMessage("/leave|{\"id\":\"a\"}|{\"room\":\"test2\"}")
+			Ω(err).Should(BeNil())
+
 			announceBAct, announceBMsg, err = ParseMessage("/announce|{\"id\":\"b\"}|{\"room\":\"test\"}")
+			Ω(err).Should(BeNil())
+
+			leaveBAct, leaveBMsg, err = ParseMessage("/leave|{\"id\":\"b\"}|{\"room\":\"test\"}")
 			Ω(err).Should(BeNil())
 		})
 
 		It("only add someone to the roome once, even if they announce more than once", func() {
-			state, _ = announceAAct(announceAMsg, nil, state)
-			state, _ = announceAAct(announceAMsg, nil, state)
+			state, err := announceAAct(announceAMsg, nil, state)
+			Ω(err).Should(BeNil())
+			state, err = announceAAct(announceAMsg, nil, state)
+			Ω(err).Should(BeNil())
 
 			Ω(len(state.Peers)).Should(Equal(1))
 			Ω(len(state.Rooms)).Should(Equal(1))
@@ -134,9 +160,11 @@ var _ = Describe("Message", func() {
 			Ω(state.PeerIsIn["a"]["test"].Room).Should(Equal("test"))
 		})
 
-		It("should be able to add multiple people to a signal box room", func() {
-			state, _ = announceAAct(announceAMsg, nil, state)
-			state, _ = announceBAct(announceBMsg, nil, state)
+		It("should be able to add multiple people to a signalbox room", func() {
+			state, err := announceAAct(announceAMsg, nil, state)
+			Ω(err).Should(BeNil())
+			state, err = announceBAct(announceBMsg, nil, state)
+			Ω(err).Should(BeNil())
 
 			Ω(len(state.Peers)).Should(Equal(2))
 			Ω(len(state.Rooms)).Should(Equal(1))
@@ -145,6 +173,39 @@ var _ = Describe("Message", func() {
 			Ω(len(state.PeerIsIn["a"])).Should(Equal(1))
 			Ω(len(state.PeerIsIn["b"])).Should(Equal(1))
 			Ω(len(state.RoomContains["test"])).Should(Equal(2))
+		})
+
+		It("Should be able to have a person leave a signalbox room", func() {
+			state, err := announceAAct(announceAMsg, nil, state)
+			Ω(err).Should(BeNil())
+			state, err = leaveAAct(leaveAMsg, nil, state)
+			Ω(err).Should(BeNil())
+
+			Ω(len(state.Peers)).Should(Equal(0))
+			Ω(len(state.Rooms)).Should(Equal(0))
+			Ω(len(state.PeerIsIn)).Should(Equal(0))
+			Ω(len(state.RoomContains)).Should(Equal(0))
+		})
+
+		It("Should keep a room, if a person leaves but it still contains peers", func() {
+			state, err := announceBAct(announceBMsg, nil, state)
+			Ω(err).Should(BeNil())
+			state, err = announceAAct(announceAMsg, nil, state)
+			Ω(err).Should(BeNil())
+			state, err = announceA2Act(announceA2Msg, nil, state)
+			Ω(err).Should(BeNil())
+			state, err = leaveBAct(leaveBMsg, nil, state)
+			Ω(err).Should(BeNil())
+
+			Ω(len(state.Peers)).Should(Equal(1))
+			Ω(len(state.Rooms)).Should(Equal(2))
+			Ω(len(state.PeerIsIn)).Should(Equal(1))
+			Ω(len(state.RoomContains)).Should(Equal(2))
+			Ω(len(state.PeerIsIn["a"])).Should(Equal(2))
+			Ω(len(state.RoomContains["test"])).Should(Equal(1))
+			Ω(len(state.RoomContains["test2"])).Should(Equal(1))
+			Ω(state.RoomContains["test"]["a"].Id).Should(Equal("a"))
+			Ω(state.RoomContains["test2"]["a"].Id).Should(Equal("a"))
 		})
 	})
 })
@@ -257,148 +318,5 @@ var _ = Describe("Message", func() {
 // 	_, c_message, err = c.ReadMessage()
 // 	if string(c_message) != "" {
 // 		t.Errorf("Peer C was not expecting any messages.")
-// 	}
-// }
-
-// func TestLeave(t *testing.T) {
-// 	announceA, message, err := ParseMessage("/announce|{\"id\":\"a\"}|{\"room\":\"test\"}")
-// 	if err != nil {
-// 		t.Errorf("Unexpected error parsing announce message for a")
-// 	}
-
-// 	announceB, message2, err := ParseMessage("/announce|{\"id\":\"b\"}|{\"room\":\"test\"}")
-// 	if err != nil {
-// 		t.Errorf("Unexpected error parsing announce message for b")
-// 	}
-
-// 	announceA2, message4, err := ParseMessage("/announce|{\"id\":\"a\"}|{\"room\":\"test2\"}")
-// 	if err != nil {
-// 		t.Errorf("Unexpected error pasring announce message for a entering test2")
-// 	}
-
-// 	leaveA, message3, err := ParseMessage("/leave|{\"id\":\"a\"}|{\"room\":\"test2\"}")
-// 	if err != nil {
-// 		t.Errorf("Unexpected error parsing leave message for a")
-// 	}
-
-// 	leaveA2, message5, err := ParseMessage("/leave|{\"id\":\"a\"}|{\"room\":\"test\"}")
-// 	if err != nil {
-// 		t.Errorf("Unexpected error parsing leave message for a")
-// 	}
-
-// 	state := SignalBox{make(map[string]*Peer),
-// 		make(map[string]*Room),
-// 		make(map[string]map[string]*Peer),
-// 		make(map[string]map[string]*Room)}
-
-// 	state, err = announceA(message, nil, state)
-// 	if err != nil {
-// 		t.Errorf("Unexpected error announcing A to the signalbox")
-// 	}
-
-// 	state, err = announceB(message2, nil, state)
-// 	if err != nil {
-// 		t.Errorf("Unexpected error announcing B to the signalbox")
-// 	}
-
-// 	state, err = announceA2(message4, nil, state)
-// 	if err != nil {
-// 		t.Errorf("Unexpected error anouncing A to the test2 room.")
-// 	}
-
-// 	if len(state.Peers) != 2 {
-// 		t.Errorf("Expected two peers within the signal box.")
-// 	}
-
-// 	if len(state.Rooms) != 2 {
-// 		t.Errorf("Expected two rooms within the signal box.")
-// 	}
-
-// 	if state.PeerIsIn["a"]["test"] != state.Rooms["test"] {
-// 		t.Errorf("Expected a to be within room test")
-// 	}
-
-// 	if state.PeerIsIn["a"]["test2"] != state.Rooms["test2"] {
-// 		t.Errorf("Expected a to be within room test2")
-// 	}
-
-// 	if state.RoomContains["test"]["a"] != state.Peers["a"] {
-// 		t.Errorf("Expected room test to contain 'a'")
-// 	}
-
-// 	if state.RoomContains["test"]["b"] != state.Peers["b"] {
-// 		t.Errorf("Expected room test to contain 'b'")
-// 	}
-
-// 	if state.RoomContains["test2"]["a"] != state.Peers["a"] {
-// 		t.Errorf("Expected room test2 to contain 'a'")
-// 	}
-
-// 	state, err = leaveA(message3, nil, state)
-
-// 	if len(state.Rooms) != 1 {
-// 		t.Errorf("Expected only one room to be left within the signal box.")
-// 	}
-
-// 	_, exists := state.Rooms["test"]
-// 	if !exists {
-// 		t.Errorf("Expected signalbox to contain the test room.")
-// 	}
-
-// 	if len(state.Peers) != 2 {
-// 		t.Errorf("Expected to have two peers left within the signal box.")
-// 	}
-
-// 	if state.RoomContains["test"]["a"] != state.Peers["a"] {
-// 		t.Errorf("Expected room test to contain 'a'")
-// 	}
-
-// 	if state.RoomContains["test"]["b"] != state.Peers["b"] {
-// 		t.Errorf("Expected room test to contain 'b'")
-// 	}
-
-// 	if len(state.PeerIsIn["a"]) != 1 {
-// 		t.Errorf("Expected peer 'a' to be in only one room.")
-// 	}
-
-// 	if state.PeerIsIn["a"]["test"] != state.Rooms["test"] {
-// 		t.Errorf("Expected peer 'a' to be within room test.")
-// 	}
-
-// 	state, err = leaveA2(message5, nil, state)
-
-// 	if len(state.Rooms) != 1 {
-// 		t.Errorf("Expected only one room to be left within the signal box.")
-// 	}
-
-// 	_, exists = state.Rooms["test"]
-// 	if !exists {
-// 		t.Errorf("Expected signalbox to contain the test room.")
-// 	}
-
-// 	if len(state.Peers) != 1 {
-// 		t.Errorf("Expected to have one peer left within the signal box.")
-// 	}
-
-// 	if state.Peers["b"].Id != "b" {
-// 		t.Errorf("Expected peer b to be within the signalbox still.")
-// 	}
-
-// 	_, exists = state.PeerIsIn["a"]
-// 	if exists {
-// 		t.Errorf("Expected peer 'a' not to be around anymore.")
-// 	}
-
-// 	if len(state.RoomContains) != 1 {
-// 		t.Errorf("Expected room contains to only have 'test' left.")
-// 	}
-
-// 	if len(state.RoomContains["test"]) != 1 {
-// 		t.Errorf("Expected test room to only contain one peer.")
-// 	}
-
-// 	_, exists = state.RoomContains["test"]["a"]
-// 	if exists {
-// 		t.Errorf("Expected peer 'a' not to be in room 'test' anymore")
 // 	}
 // }
