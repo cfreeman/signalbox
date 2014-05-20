@@ -20,7 +20,6 @@
 package main
 
 import (
-	// "fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	// "github.com/gorilla/websocket"
@@ -98,55 +97,59 @@ var _ = Describe("Message", func() {
 			Ω(destination.Room).Should(Equal("test"))
 		})
 	})
+
+	Context("Test SignalBox State", func() {
+		var state SignalBox
+		var announceAAct messageFn
+		var announceAMsg []string
+
+		var announceBAct messageFn
+		var announceBMsg []string
+
+		BeforeEach(func() {
+			var err error
+			state = SignalBox{make(map[string]*Peer),
+				make(map[string]*Room),
+				make(map[string]map[string]*Peer),
+				make(map[string]map[string]*Room)}
+
+			announceAAct, announceAMsg, err = ParseMessage("/announce|{\"id\":\"a\"}|{\"room\":\"test\"}")
+			Ω(err).Should(BeNil())
+
+			announceBAct, announceBMsg, err = ParseMessage("/announce|{\"id\":\"b\"}|{\"room\":\"test\"}")
+			Ω(err).Should(BeNil())
+		})
+
+		It("only add someone to the roome once, even if they announce more than once", func() {
+			state, _ = announceAAct(announceAMsg, nil, state)
+			state, _ = announceAAct(announceAMsg, nil, state)
+
+			Ω(len(state.Peers)).Should(Equal(1))
+			Ω(len(state.Rooms)).Should(Equal(1))
+			Ω(len(state.RoomContains)).Should(Equal(1))
+			Ω(len(state.PeerIsIn)).Should(Equal(1))
+			Ω(len(state.RoomContains["test"])).Should(Equal(1))
+			Ω(len(state.PeerIsIn["a"])).Should(Equal(1))
+			Ω(state.RoomContains["test"]["a"].Id).Should(Equal("a"))
+			Ω(state.PeerIsIn["a"]["test"].Room).Should(Equal("test"))
+		})
+
+		It("should be able to add multiple people to a signal box room", func() {
+			state, _ = announceAAct(announceAMsg, nil, state)
+			state, _ = announceBAct(announceBMsg, nil, state)
+
+			Ω(len(state.Peers)).Should(Equal(2))
+			Ω(len(state.Rooms)).Should(Equal(1))
+			Ω(len(state.PeerIsIn)).Should(Equal(2))
+			Ω(len(state.RoomContains)).Should(Equal(1))
+			Ω(len(state.PeerIsIn["a"])).Should(Equal(1))
+			Ω(len(state.PeerIsIn["b"])).Should(Equal(1))
+			Ω(len(state.RoomContains["test"])).Should(Equal(2))
+		})
+	})
 })
 
-// func TestAnnounce(t *testing.T) {
-// 	action, message, err := ParseMessage("/announce|{\"id\":\"a\"}|{\"room\":\"test\"}")
-// 	if err != nil {
-// 		t.Errorf("Unexpected error parsing announce message")
-// 	}
-
-// 	action, message2, err := ParseMessage("/announce|{\"id\":\"b\"}|{\"room\":\"test\"}")
-// 	if err != nil {
-// 		t.Errorf("Unexpected error parsing announce message")
-// 	}
-
-// 	state := SignalBox{make(map[string]*Peer),
-// 		make(map[string]*Room),
-// 		make(map[string]map[string]*Peer),
-// 		make(map[string]map[string]*Room)}
-
-// 	state, err = action(message, nil, state)
-// 	state, err = action(message, nil, state)
-// 	if len(state.Peers) != 1 {
-// 		t.Errorf("Expected the total number of peers in the signal box to be 1.")
-// 	}
-
-// 	if len(state.Rooms) != 1 {
-// 		t.Errorf("Expected the total number of rooms in the signal box to be 1.")
-// 	}
-
-// 	if len(state.RoomContains["test"]) == 1 && state.RoomContains["test"]["a"].Id != "a" {
-// 		t.Errorf("Room doesn't contain a.")
-// 	}
-
-// 	if len(state.PeerIsIn["a"]) == 1 && state.PeerIsIn["a"]["test"].Room != "test" {
-// 		t.Errorf("abc is not in room test")
-// 	}
-
-// 	state, err = action(message2, nil, state)
-// 	if len(state.Peers) != 2 {
-// 		t.Errorf("Expected the total number of peers in the signal box to be 2.")
-// 	}
-
-// 	if len(state.Rooms) != 1 {
-// 		t.Errorf("Exected the total number of rooms in the signal box to be 1.")
-// 	}
-
-// 	if len(state.RoomContains["test"]) != 2 {
-// 		t.Errorf("Expected the test room to contain two peers.")
-// 	}
-// }
+// TODO: Port the rest of the tests over to Ginkgo.
 
 // func connectPeer(id string, room string) (*websocket.Conn, error) {
 // 	url := "ws://localhost:3000"
