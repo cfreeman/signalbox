@@ -214,7 +214,7 @@ func ParseMessage(message string) (action messageFn, messageBody []string, err e
 	parts := strings.Split(message, "|")
 
 	// rtc.io commands start with "/" - ignore everything else.
-	if message[0:1] == "/" {
+	if len(message) > 0 && message[0:1] == "/" {
 		switch parts[0] {
 		case "/announce":
 			log.Printf("Announce.")

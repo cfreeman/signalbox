@@ -20,13 +20,15 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/gorilla/websocket"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	// "github.com/gorilla/websocket"
 	"reflect"
 	"runtime"
 	"testing"
-	// "time"
+	"time"
 )
 
 func Test(t *testing.T) {
@@ -215,44 +217,48 @@ var _ = Describe("Message", func() {
 	})
 
 	Context("Broadcast messages", func() {
-		// func connectPeer(id string, room string) (*websocket.Conn, error) {
-		// 	url := "ws://localhost:3000"
-		// 	res, _, err := websocket.DefaultDialer.Dial(url, nil)
-		// 	if err != nil || res == nil {
-		// 		return nil, err
-		// 	}
-
-		// 	connect := fmt.Sprintf("/announce|{\"id\":\"%s\"}|{\"room\":\"%s\"}", id, room)
-		// 	err = res.WriteMessage(websocket.TextMessage, []byte(connect))
-		// 	if err != nil {
-		// 		return nil, err
-		// 	}
-
-		// 	return res, nil
-		// }
-
+		// Spin up the signalbox.
 		go main()
+
+		It("Should be to announce to peers", func() {
+			a, err := connectPeer("a", "test-room")
+			Ω(err).Should(BeNil())
+			_, err = connectPeer("b", "test-room")
+			Ω(err).Should(BeNil())
+
+			a.SetReadDeadline(time.Now().Add(4 * time.Millisecond))
+			_, message, err := a.ReadMessage()
+			Ω(err).Should(BeNil())
+			expected, err := json.Marshal("/announce|{\"id\":\"b\"}|{\"room\":\"test-room\"}")
+			Ω(err).Should(BeNil())
+			Ω(message).Should(Equal(expected))
+		})
 
 	})
 })
 
+func connectPeer(id string, room string) (*websocket.Conn, error) {
+	url := "ws://localhost:3000"
+	res, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil || res == nil {
+		return nil, err
+	}
+
+	//var message string :=
+	connect, err := json.Marshal(fmt.Sprintf("/announce|{\"id\":\"%s\"}|{\"room\":\"%s\"}", id, room))
+	if err != nil {
+		return nil, err
+	}
+
+	err = res.WriteMessage(websocket.TextMessage, connect)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 // TODO: Port the rest of the tests over to Ginkgo.
-
-// func connectPeer(id string, room string) (*websocket.Conn, error) {
-// 	url := "ws://localhost:3000"
-// 	res, _, err := websocket.DefaultDialer.Dial(url, nil)
-// 	if err != nil || res == nil {
-// 		return nil, err
-// 	}
-
-// 	connect := fmt.Sprintf("/announce|{\"id\":\"%s\"}|{\"room\":\"%s\"}", id, room)
-// 	err = res.WriteMessage(websocket.TextMessage, []byte(connect))
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return res, nil
-// }
 
 // func TestAnnounceBroadcast(t *testing.T) {
 // 	go main()
