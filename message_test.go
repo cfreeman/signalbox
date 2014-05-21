@@ -79,7 +79,12 @@ var _ = Describe("Message", func() {
 			Ω(message[2]).Should(Equal("part2"))
 		})
 
-		// TODO: Test Malformed messages.
+		It("should ignore malformed messages", func() {
+			action, message, err := ParseMessage(":lkajsd??asdj/foo")
+			Ω(err).Should(BeNil())
+			Ω(len(message)).Should(Equal(1))
+			Ω(runtime.FuncForPC(reflect.ValueOf(action).Pointer()).Name()).Should(Equal("github.com/cfreeman/signalbox.ignore"))
+		})
 	})
 
 	Context("ParsePeerAndRoom", func() {
@@ -207,6 +212,27 @@ var _ = Describe("Message", func() {
 			Ω(state.RoomContains["test"]["a"].Id).Should(Equal("a"))
 			Ω(state.RoomContains["test2"]["a"].Id).Should(Equal("a"))
 		})
+	})
+
+	Context("Broadcast messages", func() {
+		// func connectPeer(id string, room string) (*websocket.Conn, error) {
+		// 	url := "ws://localhost:3000"
+		// 	res, _, err := websocket.DefaultDialer.Dial(url, nil)
+		// 	if err != nil || res == nil {
+		// 		return nil, err
+		// 	}
+
+		// 	connect := fmt.Sprintf("/announce|{\"id\":\"%s\"}|{\"room\":\"%s\"}", id, room)
+		// 	err = res.WriteMessage(websocket.TextMessage, []byte(connect))
+		// 	if err != nil {
+		// 		return nil, err
+		// 	}
+
+		// 	return res, nil
+		// }
+
+		go main()
+
 	})
 })
 
