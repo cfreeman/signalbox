@@ -50,6 +50,8 @@ var _ = Describe("Message", func() {
 	})
 
 	Context("Action parsing", func() {
+		// TODO test to make sure zero-length messages are handled OK.
+
 		It("should be able to parse an announce message", func() {
 			action, message, err := ParseMessage("/announce")
 			Ω(err).Should(BeNil())
@@ -220,22 +222,71 @@ var _ = Describe("Message", func() {
 		// Spin up the signalbox.
 		go main()
 
-		It("Should be to announce to peers", func() {
+		It("Should be to send announce and leave messages to peers", func() {
 			a, err := connectPeer("a", "test-room")
 			Ω(err).Should(BeNil())
-			_, err = connectPeer("b", "test-room")
+			b, err := connectPeer("b", "test-room")
 			Ω(err).Should(BeNil())
 
-			a.SetReadDeadline(time.Now().Add(4 * time.Millisecond))
-			_, message, err := a.ReadMessage()
+			socketShouldContain(a, "/announce|{\"id\":\"b\"}|{\"room\":\"test-room\"}")
+
+			socketSend(a, "/leave|{\"id\":\"a\"}|{\"room\":\"test-room\"}")
+			err = a.Close()
 			Ω(err).Should(BeNil())
-			expected, err := json.Marshal("/announce|{\"id\":\"b\"}|{\"room\":\"test-room\"}")
+
+			socketShouldContain(b, "/leave|{\"id\":\"a\"}|{\"room\":\"test-room\"}")
+			err = b.Close()
 			Ω(err).Should(BeNil())
-			Ω(message).Should(Equal(expected))
 		})
 
+		It("Should be able to send messages just to specified recipients", func() {
+			a2, err := connectPeer("a2", "to-test")
+			Ω(err).Should(BeNil())
+
+			b2, err := connectPeer("b2", "to-test")
+			Ω(err).Should(BeNil())
+
+			c2, err := connectPeer("c2", "to-test")
+			Ω(err).Should(BeNil())
+
+			socketShouldContain(a2, "/announce|{\"id\":\"b2\"}|{\"room\":\"to-test\"}")
+			socketShouldContain(a2, "/announce|{\"id\":\"c2\"}|{\"room\":\"to-test\"}")
+
+			socketShouldContain(b2, "/announce|{\"id\":\"c2\"}|{\"room\":\"to-test\"}")
+			socketSend(a2, "/to|c2|/hello|{\"id\":\"a1\"}")
+
+			socketShouldContain(c2, "/to|c2|/hello|{\"id\":\"a1\"}")
+
+			_, _, err = b2.ReadMessage()
+			Ω(err).ShouldNot(BeNil())
+		})
+
+		It("Should be able to send custom messages to peers", func() {
+			a3, err := connectPeer("a3", "custom-test")
+			Ω(err).Should(BeNil())
+			b3, err := connectPeer("b3", "custom-test")
+			Ω(err).Should(BeNil())
+
+			socketShouldContain(a3, "/announce|{\"id\":\"b3\"}|{\"room\":\"custom-test\"}")
+			socketSend(a3, "/hello|{\"id\":\"a3\"}")
+			socketShouldContain(b3, "/hello|{\"id\":\"a3\"}")
+		})
 	})
 })
+
+func socketSend(ws *websocket.Conn, content string) {
+	msg, err := json.Marshal(content)
+	Ω(err).Should(BeNil())
+	ws.WriteMessage(websocket.TextMessage, msg)
+}
+
+func socketShouldContain(ws *websocket.Conn, content string) {
+	_, message, err := ws.ReadMessage()
+	Ω(err).Should(BeNil())
+	expected, err := json.Marshal(content)
+	Ω(err).Should(BeNil())
+	Ω(message).Should(Equal(expected))
+}
 
 func connectPeer(id string, room string) (*websocket.Conn, error) {
 	url := "ws://localhost:3000"
@@ -244,7 +295,6 @@ func connectPeer(id string, room string) (*websocket.Conn, error) {
 		return nil, err
 	}
 
-	//var message string :=
 	connect, err := json.Marshal(fmt.Sprintf("/announce|{\"id\":\"%s\"}|{\"room\":\"%s\"}", id, room))
 	if err != nil {
 		return nil, err
@@ -255,100 +305,7 @@ func connectPeer(id string, room string) (*websocket.Conn, error) {
 		return nil, err
 	}
 
+	res.SetReadDeadline(time.Now().Add(4 * time.Millisecond))
+
 	return res, nil
 }
-
-// TODO: Port the rest of the tests over to Ginkgo.
-
-// func TestAnnounceBroadcast(t *testing.T) {
-// 	go main()
-
-// 	a, err := connectPeer("a", "test-room")
-// 	if err != nil {
-// 		t.Error(err)
-// 		return
-// 	}
-
-// 	b, err := connectPeer("b", "test-room")
-// 	if err != nil {
-// 		t.Error(err)
-// 		return
-// 	}
-
-// 	_, message, err := a.ReadMessage()
-// 	if err != nil || string(message) != "/announce|{\"id\":\"b\"}|{\"room\":\"test-room\"}" {
-// 		t.Errorf("Peer A did not recieve the announce message for b.")
-// 	}
-
-// 	err = a.WriteMessage(websocket.TextMessage, []byte("/leave|{\"id\":\"a\"}|{\"room\":\"test-room\"}"))
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-
-// 	_, message, err = b.ReadMessage()
-// 	if err != nil || string(message) != "/leave|{\"id\":\"a\"}|{\"room\":\"test-room\"}" {
-// 		t.Errorf("Peer B did not recieve the leave message for a.")
-// 	}
-// }
-
-// func TestMessage(t *testing.T) {
-// 	a, err := connectPeer("a1", "test-to-message")
-// 	if err != nil {
-// 		t.Error(err)
-// 		return
-// 	}
-// 	time.Sleep(2 * time.Millisecond)
-
-// 	b, err := connectPeer("b2", "test-to-message")
-// 	if err != nil {
-// 		t.Error(err)
-// 		return
-// 	}
-// 	time.Sleep(2 * time.Millisecond)
-
-// 	c, err := connectPeer("c2", "test-to-message")
-// 	if err != nil {
-// 		t.Error(err)
-// 		return
-// 	}
-// 	time.Sleep(2 * time.Millisecond)
-
-// 	// Test custom Message.
-// 	err = a.WriteMessage(websocket.TextMessage, []byte("/hello|{\"id\":\"a1\"}"))
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// 	time.Sleep(2 * time.Millisecond)
-
-// 	b.ReadMessage() // discard the c2 announce message.
-// 	_, b_message, err := b.ReadMessage()
-// 	if err != nil || string(b_message) != "/hello|{\"id\":\"a1\"}" {
-// 		t.Errorf(string(b_message))
-// 		t.Errorf("Peer B did not recieve the message from A.")
-// 	}
-
-// 	_, c_message, err := c.ReadMessage()
-// 	if err != nil || string(c_message) != "/hello|{\"id\":\"a1\"}" {
-// 		t.Errorf(string(c_message))
-// 		t.Errorf("Peer C did not recieve the message from A.")
-// 	}
-
-// 	// Test TO Message.
-// 	err = a.WriteMessage(websocket.TextMessage, []byte("/to|b2|/hello|{\"id\":\"a1\"}"))
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// 	time.Sleep(2 * time.Millisecond)
-
-// 	_, b_message, err = b.ReadMessage()
-// 	if err != nil || string(b_message) != "/to|b2|/hello|{\"id\":\"a1\"}" {
-// 		t.Errorf(string(b_message))
-// 		t.Errorf("Peer B did not recieve the personal message from A.")
-// 	}
-
-// 	c.SetReadDeadline(time.Now().Add(4 * time.Millisecond))
-// 	_, c_message, err = c.ReadMessage()
-// 	if string(c_message) != "" {
-// 		t.Errorf("Peer C was not expecting any messages.")
-// 	}
-// }
