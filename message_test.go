@@ -50,7 +50,12 @@ var _ = Describe("Message", func() {
 	})
 
 	Context("Action parsing", func() {
-		// TODO test to make sure zero-length messages are handled OK.
+		It("should be able to handle zero-length messages", func() {
+			action, message, err := ParseMessage("")
+			Ω(err).Should(BeNil())
+			Ω(runtime.FuncForPC(reflect.ValueOf(action).Pointer()).Name()).Should(Equal("github.com/cfreeman/signalbox.ignore"))
+			Ω(len(message)).Should(Equal(1))
+		})
 
 		It("should be able to parse an announce message", func() {
 			action, message, err := ParseMessage("/announce")
