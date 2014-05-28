@@ -98,21 +98,53 @@ func leave(message []string,
 		return state, errors.New(fmt.Sprintf("Unable to leave, room %s doesn't exist", destination.Room))
 	}
 
-	delete(state.PeerIsIn[peer.Id], destination.Room)
-	if len(state.PeerIsIn[peer.Id]) == 0 {
-		log.Printf("Removing Peer: %s\n", peer.Id)
-		delete(state.Peers, peer.Id)
-		delete(state.PeerIsIn, peer.Id)
+	return removePeer(peer, room, message, state)
+}
+
+func closePeer(message []string,
+	sourceSocket *websocket.Conn,
+	state SignalBox) (newState SignalBox, err error) {
+
+	source := findPeerBySocket(sourceSocket, state)
+	if source == nil {
+		return state, errors.New("Unable to close - no Peer matching socket.")
 	}
 
-	delete(state.RoomContains[destination.Room], peer.Id)
+	// Announce to everyone that the peer belonging to sourceSocket
+	// has closed and bailed out of their rooms.
+	for _, r := range state.PeerIsIn[source.Id] {
+		for _, p := range state.RoomContains[r.Room] {
+			if p.Id != source.Id && p.socket != nil {
+				src := fmt.Sprintf("{\"id\":\"%s\"}", source.Id)
+				rm := fmt.Sprintf("{\"room\":\"%s\"}", r.Room)
+
+				state, err = removePeer(source, r, []string{"/leave", src, rm}, state)
+				if err != nil {
+					return state, err
+				}
+			}
+		}
+	}
+
+	return state, nil
+}
+
+func removePeer(source *Peer, destination *Room, message []string, state SignalBox) (newState SignalBox, err error) {
+	delete(state.PeerIsIn[source.Id], destination.Room)
+	if len(state.PeerIsIn[source.Id]) == 0 {
+		log.Printf("Removing Peer: %s\n", source.Id)
+		delete(state.Peers, source.Id)
+		delete(state.PeerIsIn, source.Id)
+	}
+
+	delete(state.RoomContains[destination.Room], source.Id)
 	if len(state.RoomContains[destination.Room]) == 0 {
 		log.Printf("Removing Room: %s\n", destination.Room)
 		delete(state.Rooms, destination.Room)
 		delete(state.RoomContains, destination.Room)
 	} else {
 		// Broadcast the departure to everyone else still in the room
-		for _, p := range state.RoomContains[room.Room] {
+		for _, p := range state.RoomContains[destination.Room] {
 			if p.socket != nil {
 				writeMessage(p.socket, message)
 			}
@@ -186,6 +218,16 @@ func ignore(message []string,
 	return state, nil
 }
 
+func findPeerBySocket(sourceSocket *websocket.Conn, state SignalBox) *Peer {
+	for _, p := range state.Peers {
+		if p.socket == sourceSocket {
+			return p
+		}
+	}
+
+	return nil
+}
+
 func ParsePeerAndRoom(message []string) (source Peer, destination Room, err error) {
 	if len(message) < 3 {
 		return Peer{}, Room{}, errors.New("Not enough parts in the message body to parse peer and room.")
@@ -217,19 +259,18 @@ func ParseMessage(message string) (action messageFn, messageBody []string, err e
 	if len(message) > 0 && message[0:1] == "/" {
 		switch parts[0] {
 		case "/announce":
-			log.Printf("Announce.")
 			return announce, parts, nil
 
 		case "/leave":
-			log.Printf("Leave.")
 			return leave, parts, nil
 
 		case "/to":
-			log.Printf("To.")
 			return to, parts, nil
 
+		case "/close":
+			return closePeer, parts, nil
+
 		default:
-			log.Printf("Custom.")
 			return custom, parts, nil
 		}
 	}

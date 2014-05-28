@@ -50,17 +50,17 @@ type Message struct {
 func messagePump(msg chan Message, ws *websocket.Conn) {
 	for {
 		_, reader, err := ws.NextReader()
-		if err != nil {
-			log.Printf("messagePump error: Unable to get next reader.")
-			log.Print(err)
 
-			// TODO: Teardown peer from signalbox.
+		if err != nil {
+			// Unable to read from socket - probably closed, tell the signalbox.
+			msg <- Message{ws, "/close"}
+
 			// TODO: Need to handle websocket pings to see what is alive.
 			// TODO: Configuration file.
-			// TODO: Test when message is longer than will fit in buffer.
 			return
 		}
 
+		// TODO: Test when message is longer than will fit in buffer.
 		buffer := make([]byte, 2048)
 		n, err := reader.Read(buffer)
 		if err != nil {
@@ -85,7 +85,6 @@ func signalbox(msg chan Message) {
 	for {
 		m := <-msg
 
-		log.Printf("Message: %s\n", m.msgBody)
 		action, messageBody, err := ParseMessage(m.msgBody)
 		if err != nil {
 			log.Printf("signalbox error: Unable to parse message.")
@@ -99,8 +98,6 @@ func signalbox(msg chan Message) {
 			log.Print(err)
 		}
 	}
-
-	// TODO: Leave messages on socket closes.
 }
 
 func main() {

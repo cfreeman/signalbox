@@ -276,6 +276,18 @@ var _ = Describe("Message", func() {
 			socketSend(a3, "/hello|{\"id\":\"a3\"}")
 			socketShouldContain(b3, "/hello|{\"id\":\"a3\"}")
 		})
+
+		It("Should get a leave message when a peer disconnects", func() {
+			a4, err := connectPeer("a4", "close-test")
+			Ω(err).Should(BeNil())
+			b4, err := connectPeer("b4", "close-test")
+
+			socketShouldContain(a4, "/announce|{\"id\":\"b4\"}|{\"room\":\"close-test\"}")
+
+			err = a4.Close()
+			Ω(err).Should(BeNil())
+			socketShouldContain(b4, "/leave|{\"id\":\"a4\"}|{\"room\":\"close-test\"}")
+		})
 	})
 })
 
