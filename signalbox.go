@@ -26,6 +26,9 @@ import (
 	"net/http"
 )
 
+const bufferSize int = 2048
+const maxMessageSize int = 20480 // Ensure that inbound messages don't cause the signalbox to run out of memory.
+
 type Peer struct {
 	Id     string          // The unique identifier of the peer.
 	socket *websocket.Conn // The socket for writing to the peer.
@@ -60,9 +63,16 @@ func messagePump(msg chan Message, ws *websocket.Conn) {
 			return
 		}
 
-		// TODO: Test when message is longer than will fit in buffer.
-		buffer := make([]byte, 2048)
+		buffer := make([]byte, bufferSize)
 		n, err := reader.Read(buffer)
+		socketContents := string(buffer[0:n])
+
+		for err == nil && n == bufferSize && (len(socketContents)-bufferSize) < maxMessageSize {
+			// filled the buffer - we might have more stuff in the message.
+			n, err = reader.Read(buffer)
+			socketContents = socketContents + string(buffer[0:n])
+		}
+
 		if err != nil {
 			log.Printf("messagePump error: Unable to read from websocket.")
 			log.Print(err)
@@ -71,7 +81,7 @@ func messagePump(msg chan Message, ws *websocket.Conn) {
 
 		// Pump the new message into the signalbox.
 		var message string
-		json.Unmarshal(buffer[0:n], &message)
+		json.Unmarshal([]byte(socketContents), &message)
 		msg <- Message{ws, message}
 	}
 }

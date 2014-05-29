@@ -126,6 +126,8 @@ func closePeer(message []string,
 		}
 	}
 
+	// TODO: Test to see if we need to close the socket at this end.
+
 	return state, nil
 }
 
