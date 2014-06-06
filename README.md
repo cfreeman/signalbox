@@ -5,7 +5,7 @@ An experimental Web-RTC signalling server written in Go. Designed to be compatib
 
 
 [![Build Status](http://img.shields.io/travis/cfreeman/signalbox.svg?style=flat)](https://travis-ci.org/cfreeman/signalbox)
-![experimental](https://img.shields.io/badge/stability-experimental-red.svg?style=flat "Experimental")
+![experimental](https://img.shields.io/badge/stability-experimental-red.svg?style=flat "Experimental")&nbsp;
 ![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat "MIT License")
 
 ## License:
