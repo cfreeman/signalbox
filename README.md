@@ -4,8 +4,9 @@ signalbox
 An experimental Web-RTC signalling server written in Go. Designed to be compatible with the [signalling protocol](http://rtc.io/signalling-protocol.html#0) used with [rtc.io](http://rtc.io/).
 
 
-[![Build Status](https://travis-ci.org/cfreeman/signalbox.svg?branch=master)](https://travis-ci.org/cfreeman/signalbox)
-![experimental](https://img.shields.io/badge/stability-experimental-red.svg)
+[![Build Status](http://img.shields.io/travis/cfreeman/signalbox.svg?style=flat)](http://img.shields.io/travis/cfreeman/signalbox.svg?style=flat)
+![experimental](https://img.shields.io/badge/stability-experimental-red.svg?style=flat)
+![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)
 
 ## License:
 
