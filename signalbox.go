@@ -55,7 +55,9 @@ func messagePump(msg chan Message, ws *websocket.Conn) {
 		_, reader, err := ws.NextReader()
 
 		if err != nil {
-			// Unable to read from socket - probably closed, tell the signalbox.
+			// Unable to get reader from socket - probably closed, tell the signalbox.
+			log.Printf("Can't read from %p, closing", ws)
+			log.Print(err)
 			msg <- Message{ws, "/close"}
 
 			// TODO: Need to handle websocket pings to see what is alive.
