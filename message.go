@@ -44,7 +44,7 @@ func announce(message []string,
 
 	peer, exists := state.Peers[source.Id]
 	if !exists {
-		log.Printf("Adding Peer: %s\n", source.Id)
+		log.Printf("INFO - Adding Peer: %s\n", source.Id)
 		state.Peers[source.Id] = new(Peer)
 		state.Peers[source.Id].Id = source.Id
 		state.Peers[source.Id].socket = sourceSocket // Inject a reference to the websocket within the new peer.
@@ -53,7 +53,7 @@ func announce(message []string,
 
 	room, exists := state.Rooms[destination.Room]
 	if !exists {
-		log.Printf("Adding Room: %s\n", destination.Room)
+		log.Printf("INFO - Adding Room: %s\n", destination.Room)
 		state.Rooms[destination.Room] = new(Room)
 		state.Rooms[destination.Room].Room = destination.Room
 		room = state.Rooms[destination.Room]
@@ -126,7 +126,8 @@ func closePeer(message []string,
 		}
 	}
 
-	// TODO: Test to see if we need to close the socket at this end.
+	// Make sure the socket is closed from this end.
+	sourceSocket.Close()
 
 	return state, nil
 }
@@ -134,14 +135,14 @@ func closePeer(message []string,
 func removePeer(source *Peer, destination *Room, message []string, state SignalBox) (newState SignalBox, err error) {
 	delete(state.PeerIsIn[source.Id], destination.Room)
 	if len(state.PeerIsIn[source.Id]) == 0 {
-		log.Printf("Removing Peer: %s\n", source.Id)
+		log.Printf("INFO - Removing Peer: %s\n", source.Id)
 		delete(state.Peers, source.Id)
 		delete(state.PeerIsIn, source.Id)
 	}
 
 	delete(state.RoomContains[destination.Room], source.Id)
 	if len(state.RoomContains[destination.Room]) == 0 {
-		log.Printf("Removing Room: %s\n", destination.Room)
+		log.Printf("INFO - Removing Room: %s\n", destination.Room)
 		delete(state.Rooms, destination.Room)
 		delete(state.RoomContains, destination.Room)
 	} else {
@@ -179,7 +180,7 @@ func to(message []string,
 func writeMessage(ws *websocket.Conn, message []string) {
 	b, err := json.Marshal(strings.Join(message, "|"))
 	if err == nil {
-		log.Printf("Writing %s to %p\n", string(b), ws)
+		log.Printf("INFO - Writing %s to %p\n", string(b), ws)
 		ws.WriteMessage(websocket.TextMessage, b)
 	}
 }

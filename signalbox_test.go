@@ -124,12 +124,14 @@ var _ = Describe("Message", func() {
 			config, err := parseConfiguration("foo")
 			Ω(err).ShouldNot(BeNil())
 			Ω(config.ListenAddress).Should(Equal(":3000"))
+			Ω(config.SocketTimeout).Should(Equal(time.Duration(300) * time.Nanosecond))
 		})
 
 		It("Should be able to parse a valid config file", func() {
 			config, err := parseConfiguration("testdata/test-config.json")
 			Ω(err).Should(BeNil())
 			Ω(config.ListenAddress).Should(Equal("10.1.2.3:4000"))
+			Ω(config.SocketTimeout).Should(Equal(time.Duration(200) * time.Nanosecond))
 		})
 	})
 
@@ -263,7 +265,6 @@ var _ = Describe("Message", func() {
 			socketShouldContain(b, "/leave|{\"id\":\"a\"}|{\"room\":\"test-room\"}")
 			err = b.Close()
 			Ω(err).Should(BeNil())
-
 		})
 
 		It("Should be able to send messages just to specified recipients", func() {

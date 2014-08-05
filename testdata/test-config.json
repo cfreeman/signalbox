@@ -1,3 +1,4 @@
 {
-	"ListenAddress":"10.1.2.3:4000"
+	"ListenAddress":"10.1.2.3:4000",
+	"SocketTimeout":200
 }

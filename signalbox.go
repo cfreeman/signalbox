@@ -21,9 +21,13 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+	"os"
+	"strings"
+	"time"
 )
 
 const bufferSize int = 2048
@@ -50,18 +54,19 @@ type Message struct {
 	msgBody   string          // The body of the broadcasted message.
 }
 
-func messagePump(msg chan Message, ws *websocket.Conn) {
+func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
+	ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+	ws.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+
 	for {
 		_, reader, err := ws.NextReader()
 
 		if err != nil {
 			// Unable to get reader from socket - probably closed, tell the signalbox.
-			log.Printf("Can't read from %p, closing", ws)
+			log.Printf("ERROR - messagePump: Can't read from %p, closing", ws)
 			log.Print(err)
 			msg <- Message{ws, "/close"}
 
-			// TODO: Need to handle websocket pings to see what is alive.
-			// TODO: Configuration file.
 			return
 		}
 
@@ -76,14 +81,20 @@ func messagePump(msg chan Message, ws *websocket.Conn) {
 		}
 
 		if err != nil {
-			log.Printf("messagePump error: Unable to read from websocket.")
+			log.Printf("ERROR - messagePump: Unable to read from websocket.")
 			log.Print(err)
 			continue
 		}
 
+		// Recieved content from socket - extend read deadline.
+		ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+
 		// Pump the new message into the signalbox.
 		var message string
 		json.Unmarshal([]byte(socketContents), &message)
+
+		log.Printf("Recieved %s from %p", message, ws)
+
 		msg <- Message{ws, message}
 	}
 }
@@ -97,23 +108,44 @@ func signalbox(msg chan Message) {
 	for {
 		m := <-msg
 
+		if strings.HasPrefix(m.msgBody, "primus::ping::") {
+
+			pong := fmt.Sprintf("primus::pong::%d000", time.Now().Unix()+1)
+			log.Printf("ponging '%s'", pong)
+
+			m.msgSocket.WriteMessage(websocket.TextMessage, []byte(pong))
+			m.msgSocket.SetWriteDeadline(time.Now().Add(200 * time.Second))
+			// TODO: Get primus happy with pong messages
+			continue
+		}
+
 		action, messageBody, err := ParseMessage(m.msgBody)
 		if err != nil {
-			log.Printf("signalbox error: Unable to parse message.")
+			log.Printf("ERROR - signalbox: Unable to parse message.")
 			log.Print(err)
 			continue
 		}
 
 		s, err = action(messageBody, m.msgSocket, s)
 		if err != nil {
-			log.Printf("signalbox error: Unable to update state.")
+			log.Printf("ERROR - signalbox: Unable to update state.")
 			log.Print(err)
 		}
 	}
 }
 
 func main() {
-	log.Printf("Started SignalBox\n")
+	log.Printf("INFO - Started SignalBox\n")
+
+	configFile := "signalbox.json"
+	if len(os.Args) > 1 {
+		configFile = os.Args[1]
+	}
+
+	config, err := parseConfiguration(configFile)
+	if err != nil {
+		log.Printf("ERROR - main: Unable to parse config %s - using defaults.", err)
+	}
 
 	msg := make(chan Message)
 	go signalbox(msg)
@@ -127,15 +159,15 @@ func main() {
 		// Upgrade the HTTP server connection to the WebSocket protocol.
 		ws, err := websocket.Upgrade(w, r, nil, 1024, 1024)
 		if err != nil {
-			log.Println(err)
+			log.Printf("ERROR - http.HandleFunc: %s", err)
 			return
 		}
 
 		// Start pumping messages from this websocket into the signal box.
-		go messagePump(msg, ws)
+		go messagePump(config, msg, ws)
 	})
 
-	err := http.ListenAndServe(":3000", nil)
+	err = http.ListenAndServe(config.ListenAddress, nil)
 	if err != nil {
 		panic("ListenAndServe: " + err.Error())
 	}

@@ -22,14 +22,16 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"time"
 )
 
 type Configuration struct {
 	ListenAddress string
+	SocketTimeout time.Duration
 }
 
 func parseConfiguration(configFile string) (configuration Configuration, err error) {
-	config := Configuration{":3000"}
+	config := Configuration{":3000", 300}
 
 	// Open the configuration file.
 	file, err := os.Open(configFile)
