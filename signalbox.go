@@ -99,7 +99,7 @@ func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
 	}
 }
 
-func signalbox(msg chan Message) {
+func signalbox(config Configuration, msg chan Message) {
 	s := SignalBox{make(map[string]*Peer),
 		make(map[string]*Room),
 		make(map[string]map[string]*Peer),
@@ -108,14 +108,14 @@ func signalbox(msg chan Message) {
 	for {
 		m := <-msg
 
+		// Message matches a primus heartbeat message. Lightly massage the connection
+		// with pong brand baby oil to keep everything running smoothly.
 		if strings.HasPrefix(m.msgBody, "primus::ping::") {
+			pong := fmt.Sprintf("primus::pong::%s", strings.Split(m.msgBody, "primus::ping::")[1])
+			b, _ := json.Marshal(pong)
 
-			pong := fmt.Sprintf("primus::pong::%d000", time.Now().Unix()+1)
-			log.Printf("ponging '%s'", pong)
-
-			m.msgSocket.WriteMessage(websocket.TextMessage, []byte(pong))
-			m.msgSocket.SetWriteDeadline(time.Now().Add(200 * time.Second))
-			// TODO: Get primus happy with pong messages
+			m.msgSocket.WriteMessage(websocket.TextMessage, b)
+			m.msgSocket.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
 			continue
 		}
 
@@ -148,7 +148,7 @@ func main() {
 	}
 
 	msg := make(chan Message)
-	go signalbox(msg)
+	go signalbox(config, msg)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
