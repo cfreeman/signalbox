@@ -27,7 +27,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	// "time"
+	"time"
 )
 
 const bufferSize int = 2048
@@ -55,8 +55,8 @@ type Message struct {
 }
 
 func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
-	//ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
-	//ws.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+	ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+	ws.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
 
 	for {
 		_, reader, err := ws.NextReader()
@@ -72,16 +72,11 @@ func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
 
 		buffer := make([]byte, bufferSize)
 		n, err := reader.Read(buffer)
-		// Recieved content from socket - extend read deadline.
-		//ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
-
 		socketContents := string(buffer[0:n])
 
 		for err == nil && n == bufferSize && (len(socketContents)-bufferSize) < maxMessageSize {
 			// filled the buffer - we might have more stuff in the message.
 			n, err = reader.Read(buffer)
-			// Recieved content from socket - extend read deadline.
-			//ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
 			socketContents = socketContents + string(buffer[0:n])
 		}
 
@@ -90,6 +85,9 @@ func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
 			log.Print(err)
 			continue
 		}
+
+		// Recieved content from socket - extend read deadline.
+		ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
 
 		// Pump the new message into the signalbox.
 		var message string
@@ -117,7 +115,7 @@ func signalbox(config Configuration, msg chan Message) {
 			b, _ := json.Marshal(pong)
 
 			m.msgSocket.WriteMessage(websocket.TextMessage, b)
-			//m.msgSocket.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+			m.msgSocket.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
 			continue
 		}
 

@@ -127,7 +127,7 @@ func closePeer(message []string,
 	}
 
 	// Make sure the socket is closed from this end.
-	//sourceSocket.Close()
+	sourceSocket.Close()
 
 	return state, nil
 }
