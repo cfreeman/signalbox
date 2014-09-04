@@ -357,7 +357,7 @@ func connectPeer(id string, room string) (*websocket.Conn, error) {
 		return nil, err
 	}
 
-	res.SetReadDeadline(time.Now().Add(4 * time.Millisecond))
+	res.SetReadDeadline(time.Now().Add(10 * time.Millisecond))
 
 	return res, nil
 }
