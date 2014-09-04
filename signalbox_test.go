@@ -25,7 +25,6 @@ import (
 	"github.com/gorilla/websocket"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"log"
 	"reflect"
 	"runtime"
 	"testing"
@@ -331,16 +330,16 @@ func socketSend(ws *websocket.Conn, content string) {
 	msg, err := json.Marshal(content)
 	Ω(err).Should(BeNil())
 	ws.WriteMessage(websocket.TextMessage, msg)
+	ws.SetWriteDeadline(time.Now().Add(4 * time.Millisecond))
 }
 
 func socketShouldContain(ws *websocket.Conn, content string) {
 	_, message, err := ws.ReadMessage()
-	log.Printf("socketscontains: ")
-	log.Println(err)
 	Ω(err).Should(BeNil())
 	expected, err := json.Marshal(content)
 	Ω(err).Should(BeNil())
 	Ω(message).Should(Equal(expected))
+	ws.SetReadDeadline(time.Now().Add(4 * time.Millisecond))
 }
 
 func connectPeer(id string, room string) (*websocket.Conn, error) {
@@ -361,6 +360,7 @@ func connectPeer(id string, room string) (*websocket.Conn, error) {
 	}
 
 	res.SetReadDeadline(time.Now().Add(4 * time.Millisecond))
+	res.SetWriteDeadline(time.Now().Add(4 * time.Millisecond))
 
 	return res, nil
 }
