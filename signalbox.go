@@ -117,7 +117,7 @@ func signalbox(config Configuration, msg chan Message) {
 			b, _ := json.Marshal(pong)
 
 			m.msgSocket.WriteMessage(websocket.TextMessage, b)
-			m.msgSocket.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+			//m.msgSocket.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
 			continue
 		}
 
