@@ -55,8 +55,8 @@ type Message struct {
 }
 
 func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
-	ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
-	ws.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+	// ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+	// ws.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
 
 	for {
 		_, reader, err := ws.NextReader()
@@ -87,7 +87,7 @@ func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
 		}
 
 		// Recieved content from socket - extend read deadline.
-		ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+		// ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
 
 		// Pump the new message into the signalbox.
 		var message string
@@ -110,14 +110,14 @@ func signalbox(config Configuration, msg chan Message) {
 
 		// Message matches a primus heartbeat message. Lightly massage the connection
 		// with pong brand baby oil to keep everything running smoothly.
-		if strings.HasPrefix(m.msgBody, "primus::ping::") {
-			pong := fmt.Sprintf("primus::pong::%s", strings.Split(m.msgBody, "primus::ping::")[1])
-			b, _ := json.Marshal(pong)
+		// if strings.HasPrefix(m.msgBody, "primus::ping::") {
+		// 	pong := fmt.Sprintf("primus::pong::%s", strings.Split(m.msgBody, "primus::ping::")[1])
+		// 	b, _ := json.Marshal(pong)
 
-			m.msgSocket.WriteMessage(websocket.TextMessage, b)
-			m.msgSocket.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
-			continue
-		}
+		// 	m.msgSocket.WriteMessage(websocket.TextMessage, b)
+		// 	m.msgSocket.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+		// 	continue
+		// }
 
 		action, messageBody, err := ParseMessage(m.msgBody)
 		if err != nil {
