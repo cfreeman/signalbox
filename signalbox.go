@@ -73,11 +73,13 @@ func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
 		buffer := make([]byte, bufferSize)
 		n, err := reader.Read(buffer)
 		socketContents := string(buffer[0:n])
+		log.Printf("socketContents: %s\n", socketContents)
 
 		for err == nil && n == bufferSize && (len(socketContents)-bufferSize) < maxMessageSize {
 			// filled the buffer - we might have more stuff in the message.
 			n, err = reader.Read(buffer)
 			socketContents = socketContents + string(buffer[0:n])
+			log.Printf("socketContents: %s\n", socketContents)
 		}
 
 		if err != nil {
