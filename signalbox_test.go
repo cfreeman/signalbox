@@ -25,6 +25,7 @@ import (
 	"github.com/gorilla/websocket"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"log"
 	"reflect"
 	"runtime"
 	"testing"
@@ -334,6 +335,8 @@ func socketSend(ws *websocket.Conn, content string) {
 
 func socketShouldContain(ws *websocket.Conn, content string) {
 	_, message, err := ws.ReadMessage()
+	log.Printf("socketscontains: ")
+	log.Println(err)
 	Ω(err).Should(BeNil())
 	expected, err := json.Marshal(content)
 	Ω(err).Should(BeNil())
