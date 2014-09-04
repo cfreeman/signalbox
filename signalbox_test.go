@@ -335,8 +335,6 @@ func socketSend(ws *websocket.Conn, content string) {
 
 func socketShouldContain(ws *websocket.Conn, content string) {
 	_, message, err := ws.ReadMessage()
-	log.Printf("ShouldContain:")
-	log.Println(err)
 	Ω(err).Should(BeNil())
 	expected, err := json.Marshal(content)
 	Ω(err).Should(BeNil())
