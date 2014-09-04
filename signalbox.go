@@ -74,23 +74,18 @@ func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
 		buffer := make([]byte, bufferSize)
 		n, err := reader.Read(buffer)
 		socketContents := string(buffer[0:n])
-		log.Printf("socketContents: %s %d %d %t %t\n", socketContents, n, bufferSize, err == nil, n == bufferSize)
 
 		for err != io.EOF && (len(socketContents)-bufferSize) < maxMessageSize {
 			// filled the buffer - we might have more stuff in the message.
 			n, err = reader.Read(buffer)
 			socketContents = socketContents + string(buffer[0:n])
-			log.Printf("socketContents: %s\n", socketContents)
 		}
 
-		// n, err = reader.Read(buffer)
-		// log.Printf("aaa: %t\n", err == io.EOF)
-
-		// if err != nil {
-		// 	log.Printf("ERROR - messagePump: Unable to read from websocket.")
-		// 	log.Print(err)
-		// 	continue
-		// }
+		if err != io.EOF {
+			log.Printf("ERROR - messagePump: Unable to read from websocket.")
+			log.Print(err)
+			continue
+		}
 
 		// Recieved content from socket - extend read deadline.
 		ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
