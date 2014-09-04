@@ -93,7 +93,7 @@ func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
 		var message string
 		json.Unmarshal([]byte(socketContents), &message)
 
-		log.Printf("Recieved %s from %p", message, ws)
+		// log.Printf("Recieved %s from %p", message, ws)
 
 		msg <- Message{ws, message}
 	}
