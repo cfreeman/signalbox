@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -75,18 +76,21 @@ func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
 		socketContents := string(buffer[0:n])
 		log.Printf("socketContents: %s %d %d %t %t\n", socketContents, n, bufferSize, err == nil, n == bufferSize)
 
-		for err == nil && n == bufferSize && (len(socketContents)-bufferSize) < maxMessageSize {
+		for err != io.EOF && (len(socketContents)-bufferSize) < maxMessageSize {
 			// filled the buffer - we might have more stuff in the message.
 			n, err = reader.Read(buffer)
 			socketContents = socketContents + string(buffer[0:n])
 			log.Printf("socketContents: %s\n", socketContents)
 		}
 
-		if err != nil {
-			log.Printf("ERROR - messagePump: Unable to read from websocket.")
-			log.Print(err)
-			continue
-		}
+		// n, err = reader.Read(buffer)
+		// log.Printf("aaa: %t\n", err == io.EOF)
+
+		// if err != nil {
+		// 	log.Printf("ERROR - messagePump: Unable to read from websocket.")
+		// 	log.Print(err)
+		// 	continue
+		// }
 
 		// Recieved content from socket - extend read deadline.
 		ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
