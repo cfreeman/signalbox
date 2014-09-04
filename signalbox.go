@@ -55,8 +55,8 @@ type Message struct {
 }
 
 func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
-	ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
-	ws.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+	//ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+	//ws.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
 
 	for {
 		_, reader, err := ws.NextReader()
@@ -73,7 +73,7 @@ func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
 		buffer := make([]byte, bufferSize)
 		n, err := reader.Read(buffer)
 		// Recieved content from socket - extend read deadline.
-		ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+		//ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
 
 		socketContents := string(buffer[0:n])
 
@@ -81,7 +81,7 @@ func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
 			// filled the buffer - we might have more stuff in the message.
 			n, err = reader.Read(buffer)
 			// Recieved content from socket - extend read deadline.
-			ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+			//ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
 			socketContents = socketContents + string(buffer[0:n])
 		}
 

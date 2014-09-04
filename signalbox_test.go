@@ -330,7 +330,7 @@ func socketSend(ws *websocket.Conn, content string) {
 	msg, err := json.Marshal(content)
 	Ω(err).Should(BeNil())
 	ws.WriteMessage(websocket.TextMessage, msg)
-	ws.SetWriteDeadline(time.Now().Add(4 * time.Millisecond))
+	ws.SetWriteDeadline(time.Now().Add(10 * time.Millisecond))
 }
 
 func socketShouldContain(ws *websocket.Conn, content string) {
@@ -339,7 +339,7 @@ func socketShouldContain(ws *websocket.Conn, content string) {
 	expected, err := json.Marshal(content)
 	Ω(err).Should(BeNil())
 	Ω(message).Should(Equal(expected))
-	ws.SetReadDeadline(time.Now().Add(4 * time.Millisecond))
+	ws.SetReadDeadline(time.Now().Add(10 * time.Millisecond))
 }
 
 func connectPeer(id string, room string) (*websocket.Conn, error) {
@@ -359,8 +359,8 @@ func connectPeer(id string, room string) (*websocket.Conn, error) {
 		return nil, err
 	}
 
-	res.SetReadDeadline(time.Now().Add(4 * time.Millisecond))
-	res.SetWriteDeadline(time.Now().Add(4 * time.Millisecond))
+	res.SetReadDeadline(time.Now().Add(10 * time.Millisecond))
+	res.SetWriteDeadline(time.Now().Add(10 * time.Millisecond))
 
 	return res, nil
 }
