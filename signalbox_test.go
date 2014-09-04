@@ -25,7 +25,6 @@ import (
 	"github.com/gorilla/websocket"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"log"
 	"reflect"
 	"runtime"
 	"testing"
