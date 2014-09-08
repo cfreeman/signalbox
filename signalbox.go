@@ -168,6 +168,10 @@ func main() {
 		go messagePump(config, msg, ws)
 	})
 
+	http.HandleFunc("/rtc.io/primus.js", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, primus_content)
+	})
+
 	err = http.ListenAndServe(config.ListenAddress, nil)
 	if err != nil {
 		panic("ListenAndServe: " + err.Error())
