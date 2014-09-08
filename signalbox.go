@@ -169,6 +169,7 @@ func main() {
 	})
 
 	http.HandleFunc("/rtc.io/primus.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript")
 		fmt.Fprintf(w, primus_content)
 	})
 
