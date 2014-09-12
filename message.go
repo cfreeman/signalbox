@@ -76,6 +76,10 @@ func announce(message []string,
 		}
 	}
 
+	// Report back to the announcer the number of peers in the room.
+	members := fmt.Sprintf("{\"memberCount\":%d}", len(state.RoomContains[room.Room]))
+	writeMessage(sourceSocket, []string{"/roominfo", members})
+
 	return state, nil
 }
 
@@ -179,8 +183,8 @@ func to(message []string,
 
 func writeMessage(ws *websocket.Conn, message []string) {
 	b, err := json.Marshal(strings.Join(message, "|"))
-	if err == nil {
-		log.Printf("INFO - Writing %s to %p\n", string(b), ws)
+	if err == nil && ws != nil {
+		log.Printf("INFO - Writing %s to %\n", string(b), ws)
 		ws.WriteMessage(websocket.TextMessage, b)
 	}
 }

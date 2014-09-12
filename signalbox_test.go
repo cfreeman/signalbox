@@ -253,8 +253,11 @@ var _ = Describe("Message", func() {
 		It("Should be to send announce and leave messages to peers", func() {
 			a, err := connectPeer("a", "test-room")
 			Ω(err).Should(BeNil())
+			socketShouldContain(a, "/roominfo|{\"memberCount\":1}")
+
 			b, err := connectPeer("b", "test-room")
 			Ω(err).Should(BeNil())
+			socketShouldContain(b, "/roominfo|{\"memberCount\":2}")
 
 			socketShouldContain(a, "/announce|{\"id\":\"b\"}|{\"room\":\"test-room\"}")
 
@@ -270,12 +273,15 @@ var _ = Describe("Message", func() {
 		It("Should be able to send messages just to specified recipients", func() {
 			a2, err := connectPeer("a2", "to-test")
 			Ω(err).Should(BeNil())
+			socketShouldContain(a2, "/roominfo|{\"memberCount\":1}")
 
 			b2, err := connectPeer("b2", "to-test")
 			Ω(err).Should(BeNil())
+			socketShouldContain(b2, "/roominfo|{\"memberCount\":2}")
 
 			c2, err := connectPeer("c2", "to-test")
 			Ω(err).Should(BeNil())
+			socketShouldContain(c2, "/roominfo|{\"memberCount\":3}")
 
 			socketShouldContain(a2, "/announce|{\"id\":\"b2\"}|{\"room\":\"to-test\"}")
 			socketShouldContain(a2, "/announce|{\"id\":\"c2\"}|{\"room\":\"to-test\"}")
@@ -292,8 +298,11 @@ var _ = Describe("Message", func() {
 		It("Should be able to send custom messages to peers", func() {
 			a3, err := connectPeer("a3", "custom-test")
 			Ω(err).Should(BeNil())
+			socketShouldContain(a3, "/roominfo|{\"memberCount\":1}")
+
 			b3, err := connectPeer("b3", "custom-test")
 			Ω(err).Should(BeNil())
+			socketShouldContain(b3, "/roominfo|{\"memberCount\":2}")
 
 			socketShouldContain(a3, "/announce|{\"id\":\"b3\"}|{\"room\":\"custom-test\"}")
 			socketSend(a3, "/hello|{\"id\":\"a3\"}")
@@ -303,10 +312,13 @@ var _ = Describe("Message", func() {
 		It("Should get a leave message when a peer disconnects", func() {
 			a4, err := connectPeer("a4", "close-test")
 			Ω(err).Should(BeNil())
+			socketShouldContain(a4, "/roominfo|{\"memberCount\":1}")
+
 			b4, err := connectPeer("b4", "close-test")
+			Ω(err).Should(BeNil())
+			socketShouldContain(b4, "/roominfo|{\"memberCount\":2}")
 
 			socketShouldContain(a4, "/announce|{\"id\":\"b4\"}|{\"room\":\"close-test\"}")
-
 			err = a4.Close()
 			Ω(err).Should(BeNil())
 			socketShouldContain(b4, "/leave|{\"id\":\"a4\"}|{\"room\":\"close-test\"}")
@@ -315,7 +327,10 @@ var _ = Describe("Message", func() {
 		It("Should be able to handle very long messages", func() {
 			a5, err := connectPeer("a5", "long-test")
 			Ω(err).Should(BeNil())
+			socketShouldContain(a5, "/roominfo|{\"memberCount\":1}")
+
 			b5, err := connectPeer("b5", "long-test")
+			socketShouldContain(b5, "/roominfo|{\"memberCount\":2}")
 
 			socketShouldContain(a5, "/announce|{\"id\":\"b5\"}|{\"room\":\"long-test\"}")
 
