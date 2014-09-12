@@ -8,6 +8,51 @@ An experimental Web-RTC signalling server written in Go. Designed to be compatib
 ![alpha](https://img.shields.io/badge/stability-alpha-orange.svg?style=flat "Alpha")&nbsp;
 ![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat "MIT License")
 
+## Installation instructions (Ubuntu):
+
+* [Download and Install Go](http://golang.org/doc/install)
+
+* Get and compile Signalbox
+
+		go get github.com/cfreeman/signalbox
+
+* Install on your server
+
+		sudo cp bin/signalbox /usr/sbin/signalbox
+
+* Create signalbox configuration file
+
+		vim /etc/signalbox.json
+		{
+		  "ListenAddress":":3000"
+		}
+
+* Create directory to hold signalbox logging output
+
+		sudo mkdir /var/log/signalbox
+		sudo chown /var/log/signalbox www-data
+		sudo chgrp /var/log/signalbox www-data
+
+* Create upstart configuration file
+
+		vim /etc/init/signalbox.conf
+		description "A webRTC signalling server."
+
+		start on filesystem or runlevel [2345]
+		stop on runlevel [!2345]
+
+		exec start-stop
+
+		exec start-stop-daemon --start --chuid www-data --exec /usr/sbin/signalbox /etc/signalbox.json 2>> /var/log/signalbox/signalbox.log
+
+* Start signalbox
+
+		sudo start signalbox
+
+* Signalbox is now running on port 3000. You can open it up, or proxy pass from apache or nginx.
+
+
+
 ## License:
 
 Copyright (c) 2014 Clinton Freeman
