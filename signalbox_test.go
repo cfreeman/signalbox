@@ -20,7 +20,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	. "github.com/onsi/ginkgo"
@@ -342,17 +341,13 @@ var _ = Describe("Message", func() {
 })
 
 func socketSend(ws *websocket.Conn, content string) {
-	msg, err := json.Marshal(content)
-	Ω(err).Should(BeNil())
-	ws.WriteMessage(websocket.TextMessage, msg)
+	ws.WriteMessage(websocket.TextMessage, []byte(content))
 }
 
 func socketShouldContain(ws *websocket.Conn, content string) {
 	_, message, err := ws.ReadMessage()
 	Ω(err).Should(BeNil())
-	expected, err := json.Marshal(content)
-	Ω(err).Should(BeNil())
-	Ω(message).Should(Equal(expected))
+	Ω(string(message)).Should(Equal(content))
 }
 
 func connectPeer(id string, room string) (*websocket.Conn, error) {
@@ -362,12 +357,8 @@ func connectPeer(id string, room string) (*websocket.Conn, error) {
 		return nil, err
 	}
 
-	connect, err := json.Marshal(fmt.Sprintf("/announce|{\"id\":\"%s\"}|{\"room\":\"%s\"}", id, room))
-	if err != nil {
-		return nil, err
-	}
-
-	err = res.WriteMessage(websocket.TextMessage, connect)
+	connect := fmt.Sprintf("/announce|{\"id\":\"%s\"}|{\"room\":\"%s\"}", id, room)
+	err = res.WriteMessage(websocket.TextMessage, []byte(connect))
 	if err != nil {
 		return nil, err
 	}

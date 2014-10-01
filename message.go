@@ -184,7 +184,7 @@ func to(message []string,
 func writeMessage(ws *websocket.Conn, message []string) {
 	b := strings.Join(message, "|")
 	if ws != nil {
-		log.Printf("INFO - Writing %s to %\n", b, ws)
+		log.Printf("INFO - Writing %s to %p", b, ws)
 		ws.WriteMessage(websocket.TextMessage, []byte(b))
 	}
 }

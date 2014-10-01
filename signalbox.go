@@ -92,7 +92,6 @@ func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
 
 		// Pump the new message into the signalbox.
 		log.Printf("Recieved %s from %p", socketContents, ws)
-
 		msg <- Message{ws, socketContents}
 	}
 }
