@@ -78,7 +78,7 @@ func announce(message []string,
 
 	// Report back to the announcer the number of peers in the room.
 	members := fmt.Sprintf("{\"memberCount\":%d}", len(state.RoomContains[room.Room]))
-	writeMessage(sourceSocket, []string{"/roominfo", members})
+	err = writeMessage(sourceSocket, []string{"/roominfo", members})
 
 	return state, nil
 }
@@ -131,9 +131,9 @@ func closePeer(message []string,
 	}
 
 	// Make sure the socket is closed from this end.
-	sourceSocket.Close()
+	err = sourceSocket.Close()
 
-	return state, nil
+	return state, err
 }
 
 func removePeer(source *Peer, destination *Room, message []string, state SignalBox) (newState SignalBox, err error) {
@@ -152,13 +152,13 @@ func removePeer(source *Peer, destination *Room, message []string, state SignalB
 	} else {
 		// Broadcast the departure to everyone else still in the room
 		for _, p := range state.RoomContains[destination.Room] {
-			if p.socket != nil {
-				writeMessage(p.socket, message)
+			if p.socket != nil && err == nil {
+				err = writeMessage(p.socket, message)
 			}
 		}
 	}
 
-	return state, nil
+	return state, err
 }
 
 func to(message []string,
@@ -175,18 +175,20 @@ func to(message []string,
 	}
 
 	if d.socket != nil {
-		writeMessage(d.socket, message)
+		err = writeMessage(d.socket, message)
 	}
 
-	return state, nil
+	return state, err
 }
 
-func writeMessage(ws *websocket.Conn, message []string) {
+func writeMessage(ws *websocket.Conn, message []string) error {
 	b := strings.Join(message, "|")
 	if ws != nil {
 		log.Printf("INFO - Writing %s to %p", b, ws)
-		ws.WriteMessage(websocket.TextMessage, []byte(b))
+		return ws.WriteMessage(websocket.TextMessage, []byte(b))
 	}
+
+	return nil
 }
 
 func custom(message []string,
@@ -210,13 +212,13 @@ func custom(message []string,
 
 	for _, r := range state.PeerIsIn[peer.Id] {
 		for _, p := range state.RoomContains[r.Room] {
-			if p.Id != peer.Id && p.socket != nil {
-				writeMessage(p.socket, message)
+			if p.Id != peer.Id && p.socket != nil && err != nil {
+				err = writeMessage(p.socket, message)
 			}
 		}
 	}
 
-	return state, nil
+	return state, err
 }
 
 func ignore(message []string,
