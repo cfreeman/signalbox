@@ -182,10 +182,10 @@ func to(message []string,
 }
 
 func writeMessage(ws *websocket.Conn, message []string) {
-	b, err := json.Marshal(strings.Join(message, "|"))
-	if err == nil && ws != nil {
-		log.Printf("INFO - Writing %s to %\n", string(b), ws)
-		ws.WriteMessage(websocket.TextMessage, b)
+	b := strings.Join(message, "|")
+	if ws != nil {
+		log.Printf("INFO - Writing %s to %p", b, ws)
+		ws.WriteMessage(websocket.TextMessage, []byte(b))
 	}
 }
 

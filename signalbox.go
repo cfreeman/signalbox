@@ -91,12 +91,8 @@ func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
 		ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
 
 		// Pump the new message into the signalbox.
-		var message string
-		json.Unmarshal([]byte(socketContents), &message)
-
-		log.Printf("Recieved %s from %p", message, ws)
-
-		msg <- Message{ws, message}
+		log.Printf("Recieved %s from %p", socketContents, ws)
+		msg <- Message{ws, socketContents}
 	}
 }
 
