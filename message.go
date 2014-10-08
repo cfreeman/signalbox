@@ -78,9 +78,7 @@ func announce(message []string,
 
 	// Report back to the announcer the number of peers in the room.
 	members := fmt.Sprintf("{\"memberCount\":%d}", len(state.RoomContains[room.Room]))
-	err = writeMessage(sourceSocket, []string{"/roominfo", members})
-
-	return state, nil
+	return state, writeMessage(sourceSocket, []string{"/roominfo", members})
 }
 
 func leave(message []string,
@@ -131,9 +129,7 @@ func closePeer(message []string,
 	}
 
 	// Make sure the socket is closed from this end.
-	err = sourceSocket.Close()
-
-	return state, err
+	return state, sourceSocket.Close()
 }
 
 func removePeer(source *Peer, destination *Room, message []string, state SignalBox) (newState SignalBox, err error) {
@@ -207,18 +203,19 @@ func custom(message []string,
 
 	peer, exists := state.Peers[source.Id]
 	if !exists {
-		return state, nil
+		return state, err
 	}
 
 	for _, r := range state.PeerIsIn[peer.Id] {
 		for _, p := range state.RoomContains[r.Room] {
-			if p.Id != peer.Id && p.socket != nil && err != nil {
+			// TODO: Work out why err != nil is making custom message tests fail.
+			if p.Id != peer.Id && p.socket != nil /*&& err != nil*/ {
 				err = writeMessage(p.socket, message)
 			}
 		}
 	}
 
-	return state, err
+	return state, nil
 }
 
 func ignore(message []string,
@@ -253,7 +250,7 @@ func ParsePeerAndRoom(message []string) (source Peer, destination Room, err erro
 		return Peer{}, Room{}, err
 	}
 
-	return source, destination, nil
+	return source, destination, err
 }
 
 func ParseMessage(message string) (action messageFn, messageBody []string, err error) {
@@ -268,21 +265,21 @@ func ParseMessage(message string) (action messageFn, messageBody []string, err e
 	if len(message) > 0 && message[0:1] == "/" {
 		switch parts[0] {
 		case "/announce":
-			return announce, parts, nil
+			return announce, parts, err
 
 		case "/leave":
-			return leave, parts, nil
+			return leave, parts, err
 
 		case "/to":
-			return to, parts, nil
+			return to, parts, err
 
 		case "/close":
-			return closePeer, parts, nil
+			return closePeer, parts, err
 
 		default:
-			return custom, parts, nil
+			return custom, parts, err
 		}
 	}
 
-	return ignore, parts, nil
+	return ignore, parts, err
 }
