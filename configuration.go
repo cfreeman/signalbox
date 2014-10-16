@@ -25,6 +25,7 @@ import (
 	"time"
 )
 
+// A Configuration holds all the necessary metadata for signalbox to operate.
 type Configuration struct {
 	ListenAddress string
 	SocketTimeout time.Duration

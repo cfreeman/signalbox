@@ -34,15 +34,18 @@ import (
 const bufferSize int = 2048
 const maxMessageSize int = 20480 // Ensure that inbound messages don't cause the signalbox to run out of memory.
 
+// A peer is an inbound WebRTC connection.
 type Peer struct {
-	Id     string          // The unique identifier of the peer.
+	ID     string          // The unique identifier of the peer.
 	socket *websocket.Conn // The socket for writing to the peer.
 }
 
+// A room holds a collection of peers who wish to communicate with one another.
 type Room struct {
 	Room string // The unique name of the room (id).
 }
 
+// A signalbox holds peers and rooms, and who belongs to what.
 type SignalBox struct {
 	Peers        map[string]*Peer            // All the peers currently inside this signalbox.
 	Rooms        map[string]*Room            // All the rooms currently inside this signalbox.
@@ -50,14 +53,21 @@ type SignalBox struct {
 	PeerIsIn     map[string]map[string]*Room // All the rooms a peer is currently inside.
 }
 
+// A message that was broadcasted from an inbound WebRTC connection
 type Message struct {
 	msgSocket *websocket.Conn // The socket that the message was broadcast across.
 	msgBody   string          // The body of the broadcasted message.
 }
 
 func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
-	ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
-	ws.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+	err := ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+	if err != nil {
+		log.Printf("ERROR - messagePump: Unable to extend read deadline")
+	}
+	err = ws.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+	if err != nil {
+		log.Printf("ERROR - messagePump: Unable to extend write deadline")
+	}
 
 	for {
 		_, reader, err := ws.NextReader()
@@ -88,7 +98,10 @@ func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
 		}
 
 		// Recieved content from socket - extend read deadline.
-		ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+		err = ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+		if err != nil {
+			log.Printf("ERROR - messagePump: Unable to extend read deadline")
+		}
 
 		// Pump the new message into the signalbox.
 		log.Printf("Recieved %s from %p", socketContents, ws)
@@ -105,18 +118,24 @@ func signalbox(config Configuration, msg chan Message) {
 	for {
 		m := <-msg
 
-		// Message matches a primus heartbeat message. Lightly massage the connection
+		// message matches a primus heartbeat message. Lightly massage the connection
 		// with pong brand baby oil to keep everything running smoothly.
 		if strings.HasPrefix(m.msgBody, "primus::ping::") {
 			pong := fmt.Sprintf("primus::pong::%s", strings.Split(m.msgBody, "primus::ping::")[1])
 			b, _ := json.Marshal(pong)
 
-			m.msgSocket.WriteMessage(websocket.TextMessage, b)
-			m.msgSocket.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+			err := m.msgSocket.WriteMessage(websocket.TextMessage, b)
+			if err != nil {
+				log.Printf("ERROR - signalbox: Unable to write message: %s", b)
+			}
+			err = m.msgSocket.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+			if err != nil {
+				log.Printf("ERROR - signalbox: Unable to extend write deadline")
+			}
 			continue
 		}
 
-		action, messageBody, err := ParseMessage(m.msgBody)
+		action, messageBody, err := parseMessage(m.msgBody)
 		if err != nil {
 			log.Printf("ERROR - signalbox: Unable to parse message.")
 			log.Print(err)

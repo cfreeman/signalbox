@@ -38,54 +38,54 @@ func TestMessage(t *testing.T) {
 var _ = Describe("Message", func() {
 	Context("Utf8 encoding", func() {
 		It("should return an error for non-utf8 encoded messages", func() {
-			_, _, err := ParseMessage(string([]byte{0xff, 0xfe, 0xfd}))
+			_, _, err := parseMessage(string([]byte{0xff, 0xfe, 0xfd}))
 			Ω(err).ShouldNot(BeNil())
 		})
 
 		It("should should not return an error for utf8 encoded messages", func() {
-			_, _, err := ParseMessage("/announce|{\"id\":\"dc6ac0ae-6e15-409b-b211-228a8f4a43b9\"}|{\"browser\":\"node\",\"browserVersion\":\"?\",\"id\":\"dc6ac0ae-6e15-409b-b211-228a8f4a43b9\",\"agent\":\"signaller@0.18.3\",\"room\":\"test-room\"}")
+			_, _, err := parseMessage("/announce|{\"id\":\"dc6ac0ae-6e15-409b-b211-228a8f4a43b9\"}|{\"browser\":\"node\",\"browserVersion\":\"?\",\"id\":\"dc6ac0ae-6e15-409b-b211-228a8f4a43b9\",\"agent\":\"signaller@0.18.3\",\"room\":\"test-room\"}")
 			Ω(err).Should(BeNil())
 		})
 	})
 
 	Context("Action parsing", func() {
 		It("should be able to handle zero-length messages", func() {
-			action, message, err := ParseMessage("")
+			action, message, err := parseMessage("")
 			Ω(err).Should(BeNil())
 			Ω(runtime.FuncForPC(reflect.ValueOf(action).Pointer()).Name()).Should(Equal("github.com/cfreeman/signalbox.ignore"))
 			Ω(len(message)).Should(Equal(1))
 		})
 
 		It("should be able to parse an announce message", func() {
-			action, message, err := ParseMessage("/announce")
+			action, message, err := parseMessage("/announce")
 			Ω(err).Should(BeNil())
 			Ω(runtime.FuncForPC(reflect.ValueOf(action).Pointer()).Name()).Should(Equal("github.com/cfreeman/signalbox.announce"))
 			Ω(len(message)).Should(Equal(1))
 		})
 
 		It("should be able to parse a leave message", func() {
-			action, message, err := ParseMessage("/leave")
+			action, message, err := parseMessage("/leave")
 			Ω(err).Should(BeNil())
 			Ω(runtime.FuncForPC(reflect.ValueOf(action).Pointer()).Name()).Should(Equal("github.com/cfreeman/signalbox.leave"))
 			Ω(len(message)).Should(Equal(1))
 		})
 
 		It("should be able to parse a close message", func() {
-			action, message, err := ParseMessage("/close")
+			action, message, err := parseMessage("/close")
 			Ω(err).Should(BeNil())
 			Ω(runtime.FuncForPC(reflect.ValueOf(action).Pointer()).Name()).Should(Equal("github.com/cfreeman/signalbox.closePeer"))
 			Ω(len(message)).Should(Equal(1))
 		})
 
 		It("should be able to parse a to message", func() {
-			action, message, err := ParseMessage("/to")
+			action, message, err := parseMessage("/to")
 			Ω(err).Should(BeNil())
 			Ω(runtime.FuncForPC(reflect.ValueOf(action).Pointer()).Name()).Should(Equal("github.com/cfreeman/signalbox.to"))
 			Ω(len(message)).Should(Equal(1))
 		})
 
 		It("should be able to parse a custom message", func() {
-			action, message, err := ParseMessage("/custom|part1|part2")
+			action, message, err := parseMessage("/custom|part1|part2")
 			Ω(err).Should(BeNil())
 			Ω(runtime.FuncForPC(reflect.ValueOf(action).Pointer()).Name()).Should(Equal("github.com/cfreeman/signalbox.custom"))
 			Ω(len(message)).Should(Equal(3))
@@ -95,25 +95,25 @@ var _ = Describe("Message", func() {
 		})
 
 		It("should ignore malformed messages", func() {
-			action, message, err := ParseMessage(":lkajsd??asdj/foo")
+			action, message, err := parseMessage(":lkajsd??asdj/foo")
 			Ω(err).Should(BeNil())
 			Ω(len(message)).Should(Equal(1))
 			Ω(runtime.FuncForPC(reflect.ValueOf(action).Pointer()).Name()).Should(Equal("github.com/cfreeman/signalbox.ignore"))
 		})
 	})
 
-	Context("ParsePeerAndRoom", func() {
+	Context("parsePeerAndRoom", func() {
 		It("should return an error when their is not enough parts to a message", func() {
-			_, message, _ := ParseMessage("/foo")
-			_, _, err := ParsePeerAndRoom(message)
+			_, message, _ := parseMessage("/foo")
+			_, _, err := parsePeerAndRoom(message)
 			Ω(err).ShouldNot(BeNil())
 		})
 
 		It("should parse source id and room", func() {
-			_, message, _ := ParseMessage("/announce|{\"id\":\"abc\"}|{\"room\":\"test\"}")
-			source, destination, err := ParsePeerAndRoom(message)
+			_, message, _ := parseMessage("/announce|{\"id\":\"abc\"}|{\"room\":\"test\"}")
+			source, destination, err := parsePeerAndRoom(message)
 			Ω(err).Should(BeNil())
-			Ω(source.Id).Should(Equal("abc"))
+			Ω(source.ID).Should(Equal("abc"))
 			Ω(destination.Room).Should(Equal("test"))
 		})
 	})
@@ -161,22 +161,22 @@ var _ = Describe("Message", func() {
 				make(map[string]map[string]*Peer),
 				make(map[string]map[string]*Room)}
 
-			announceAAct, announceAMsg, err = ParseMessage("/announce|{\"id\":\"a\"}|{\"room\":\"test\"}")
+			announceAAct, announceAMsg, err = parseMessage("/announce|{\"id\":\"a\"}|{\"room\":\"test\"}")
 			Ω(err).Should(BeNil())
 
-			announceA2Act, announceA2Msg, err = ParseMessage("/announce|{\"id\":\"a\"}|{\"room\":\"test2\"}")
+			announceA2Act, announceA2Msg, err = parseMessage("/announce|{\"id\":\"a\"}|{\"room\":\"test2\"}")
 			Ω(err).Should(BeNil())
 
-			leaveAAct, leaveAMsg, err = ParseMessage("/leave|{\"id\":\"a\"}|{\"room\":\"test\"}")
+			leaveAAct, leaveAMsg, err = parseMessage("/leave|{\"id\":\"a\"}|{\"room\":\"test\"}")
 			Ω(err).Should(BeNil())
 
-			leaveA2Act, leaveA2Msg, err = ParseMessage("/leave|{\"id\":\"a\"}|{\"room\":\"test2\"}")
+			leaveA2Act, leaveA2Msg, err = parseMessage("/leave|{\"id\":\"a\"}|{\"room\":\"test2\"}")
 			Ω(err).Should(BeNil())
 
-			announceBAct, announceBMsg, err = ParseMessage("/announce|{\"id\":\"b\"}|{\"room\":\"test\"}")
+			announceBAct, announceBMsg, err = parseMessage("/announce|{\"id\":\"b\"}|{\"room\":\"test\"}")
 			Ω(err).Should(BeNil())
 
-			leaveBAct, leaveBMsg, err = ParseMessage("/leave|{\"id\":\"b\"}|{\"room\":\"test\"}")
+			leaveBAct, leaveBMsg, err = parseMessage("/leave|{\"id\":\"b\"}|{\"room\":\"test\"}")
 			Ω(err).Should(BeNil())
 		})
 
@@ -192,7 +192,7 @@ var _ = Describe("Message", func() {
 			Ω(len(state.PeerIsIn)).Should(Equal(1))
 			Ω(len(state.RoomContains["test"])).Should(Equal(1))
 			Ω(len(state.PeerIsIn["a"])).Should(Equal(1))
-			Ω(state.RoomContains["test"]["a"].Id).Should(Equal("a"))
+			Ω(state.RoomContains["test"]["a"].ID).Should(Equal("a"))
 			Ω(state.PeerIsIn["a"]["test"].Room).Should(Equal("test"))
 		})
 
@@ -240,8 +240,8 @@ var _ = Describe("Message", func() {
 			Ω(len(state.PeerIsIn["a"])).Should(Equal(2))
 			Ω(len(state.RoomContains["test"])).Should(Equal(1))
 			Ω(len(state.RoomContains["test2"])).Should(Equal(1))
-			Ω(state.RoomContains["test"]["a"].Id).Should(Equal("a"))
-			Ω(state.RoomContains["test2"]["a"].Id).Should(Equal("a"))
+			Ω(state.RoomContains["test"]["a"].ID).Should(Equal("a"))
+			Ω(state.RoomContains["test2"]["a"].ID).Should(Equal("a"))
 		})
 	})
 
