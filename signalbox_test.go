@@ -44,8 +44,7 @@ var _ = Describe("Message", func() {
 
 		It("should should not return an error for utf8 encoded messages", func() {
 			_, _, err := parseMessage("/announce|{\"id\":\"dc6ac0ae-6e15-409b-b211-228a8f4a43b9\"}|{\"browser\":\"node\",\"browserVersion\":\"?\",\"id\":\"dc6ac0ae-6e15-409b-b211-228a8f4a43b9\",\"agent\":\"signaller@0.18.3\",\"room\":\"test-room\"}")
-			//Ω(err).Should(BeNil())			
-			Ω(err).ShouldNot(BeNil())			
+			Ω(err).Should(BeNil())						
 		})
 	})
 
