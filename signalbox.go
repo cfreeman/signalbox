@@ -165,6 +165,7 @@ func main() {
 	})
 
 	http.HandleFunc("/rtc.io/primus.js", func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("INFO - Serving primus.js file.")	// Hope to deprecate this with the latest version rtc.io signalling protocol changes.
 		w.Header().Set("Content-Type", "text/javascript")
 		fmt.Fprintf(w, primus_content)
 	})
