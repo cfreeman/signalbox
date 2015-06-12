@@ -180,7 +180,7 @@ var _ = Describe("Message", func() {
 			Ω(err).Should(BeNil())
 		})
 
-		It("only add someone to the roome once, even if they announce more than once", func() {
+		It("only add someone to the room once, even if they announce more than once", func() {
 			state, err := announceAAct(announceAMsg, nil, state)
 			Ω(err).Should(BeNil())
 			state, err = announceAAct(announceAMsg, nil, state)

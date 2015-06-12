@@ -212,7 +212,7 @@ func custom(message []string,
 
 	for _, r := range state.PeerIsIn[peer.Id] {
 		for _, p := range state.RoomContains[r.Room] {
-			if p.Id != peer.Id && p.socket != nil && err != nil {
+			if p.Id != peer.Id && p.socket != nil && err == nil {
 				err = writeMessage(p.socket, message)
 			}
 		}
