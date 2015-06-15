@@ -119,9 +119,10 @@ func closePeer(message []string,
 	for _, r := range state.PeerIsIn[source.Id] {
 		for _, p := range state.RoomContains[r.Room] {
 			if p.Id != source.Id && p.socket != nil {
+				src := fmt.Sprintf("{\"id\":\"%s\"}", source.Id)
 				rm := fmt.Sprintf("{\"room\":\"%s\"}", r.Room)
 
-				state, err = removePeer(source, r, []string{"/leave", source.Id, rm}, state)
+				state, err = removePeer(source, r, []string{"/leave", src, rm}, state)
 				if err != nil {
 					return state, err
 				}
@@ -194,11 +195,15 @@ func custom(message []string,
 	sourceSocket *websocket.Conn,
 	state SignalBox) (newState SignalBox, err error) {
 
+	source := Peer{}
 	if len(message) < 2 {
 		return state, errors.New("Not enough parts to custom message")
 	}
 
-	source := Peer{message[1], nil}
+	err = json.Unmarshal([]byte(message[1]), &source)
+	if err != nil {
+		return state, err
+	}
 
 	peer, exists := state.Peers[source.Id]
 	if !exists {
@@ -237,12 +242,18 @@ func ParsePeerAndRoom(message []string) (source Peer, destination Room, err erro
 		return Peer{}, Room{}, errors.New("Not enough parts in the message body to parse peer and room.")
 	}
 
+	err = json.Unmarshal([]byte(message[1]), &source)
+	if err != nil {
+		log.Print(err)
+		return Peer{}, Room{}, err
+	}
+
 	err = json.Unmarshal([]byte(message[2]), &destination)
 	if err != nil {
 		return Peer{}, Room{}, err
 	}
 
-	return Peer{message[1], nil}, destination, nil
+	return source, destination, nil
 }
 
 func ParseMessage(message string) (action messageFn, messageBody []string, err error) {
