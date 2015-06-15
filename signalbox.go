@@ -56,9 +56,6 @@ type Message struct {
 }
 
 func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
-	ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
-	ws.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
-
 	for {
 		_, reader, err := ws.NextReader()
 
@@ -68,7 +65,7 @@ func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
 			log.Print(err)
 			msg <- Message{ws, "/close"}
 
-			return
+			break
 		}
 
 		buffer := make([]byte, bufferSize)
@@ -141,7 +138,7 @@ func main() {
 
 	config, err := parseConfiguration(configFile)
 	if err != nil {
-		log.Printf("ERROR - main: Unable to parse config %s - using defaults.", err)
+		log.Printf("INFO - main: Unable to parse config %s - using defaults.", err)
 	}
 
 	msg := make(chan Message)
@@ -164,8 +161,10 @@ func main() {
 		go messagePump(config, msg, ws)
 	})
 
+	// Earlier versions of rtc.io expected the signalling server to dish up a primus.js file.
+	// Hope to deprecate this with the latest version rtc.io signalling protocol changes.
 	http.HandleFunc("/rtc.io/primus.js", func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("INFO - Serving primus.js file.")	// Hope to deprecate this with the latest version rtc.io signalling protocol changes.
+		log.Printf("INFO - Serving primus.js file.")
 		w.Header().Set("Content-Type", "text/javascript")
 		fmt.Fprintf(w, primus_content)
 	})
