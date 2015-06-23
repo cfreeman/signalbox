@@ -88,7 +88,7 @@ func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
 		ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
 
 		// Pump the new message into the signalbox.
-		log.Printf("Recieved %s from %p", socketContents, ws)
+		//log.Printf("Recieved %s from %p", socketContents, ws)
 		msg <- Message{ws, socketContents}
 	}
 }
@@ -164,7 +164,7 @@ func main() {
 	// Earlier versions of rtc.io expected the signalling server to dish up a primus.js file.
 	// Hope to deprecate this with the latest version rtc.io signalling protocol changes.
 	http.HandleFunc("/rtc.io/primus.js", func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("INFO - Serving primus.js file.")
+		// log.Printf("INFO - Serving primus.js file.")
 		w.Header().Set("Content-Type", "text/javascript")
 		fmt.Fprintf(w, primus_content)
 	})
