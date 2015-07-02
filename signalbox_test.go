@@ -181,9 +181,9 @@ var _ = Describe("Message", func() {
 		})
 
 		It("only add someone to the room once, even if they announce more than once", func() {
-			state, err := announceAAct(announceAMsg, nil, state)
+			state, err := announceAAct(announceAMsg, nil, state, Configuration{":3000", 300})
 			Ω(err).Should(BeNil())
-			state, err = announceAAct(announceAMsg, nil, state)
+			state, err = announceAAct(announceAMsg, nil, state, Configuration{":3000", 300})
 			Ω(err).Should(BeNil())
 
 			Ω(len(state.Peers)).Should(Equal(1))
@@ -197,9 +197,9 @@ var _ = Describe("Message", func() {
 		})
 
 		It("should be able to add multiple people to a signalbox room", func() {
-			state, err := announceAAct(announceAMsg, nil, state)
+			state, err := announceAAct(announceAMsg, nil, state, Configuration{":3000", 300})
 			Ω(err).Should(BeNil())
-			state, err = announceBAct(announceBMsg, nil, state)
+			state, err = announceBAct(announceBMsg, nil, state, Configuration{":3000", 300})
 			Ω(err).Should(BeNil())
 
 			Ω(len(state.Peers)).Should(Equal(2))
@@ -212,9 +212,9 @@ var _ = Describe("Message", func() {
 		})
 
 		It("Should be able to have a person leave a signalbox room", func() {
-			state, err := announceAAct(announceAMsg, nil, state)
+			state, err := announceAAct(announceAMsg, nil, state, Configuration{":3000", 300})
 			Ω(err).Should(BeNil())
-			state, err = leaveAAct(leaveAMsg, nil, state)
+			state, err = leaveAAct(leaveAMsg, nil, state, Configuration{":3000", 300})
 			Ω(err).Should(BeNil())
 
 			Ω(len(state.Peers)).Should(Equal(0))
@@ -224,13 +224,13 @@ var _ = Describe("Message", func() {
 		})
 
 		It("Should keep a room, if a person leaves but it still contains peers", func() {
-			state, err := announceBAct(announceBMsg, nil, state)
+			state, err := announceBAct(announceBMsg, nil, state, Configuration{":3000", 300})
 			Ω(err).Should(BeNil())
-			state, err = announceAAct(announceAMsg, nil, state)
+			state, err = announceAAct(announceAMsg, nil, state, Configuration{":3000", 300})
 			Ω(err).Should(BeNil())
-			state, err = announceA2Act(announceA2Msg, nil, state)
+			state, err = announceA2Act(announceA2Msg, nil, state, Configuration{":3000", 300})
 			Ω(err).Should(BeNil())
-			state, err = leaveBAct(leaveBMsg, nil, state)
+			state, err = leaveBAct(leaveBMsg, nil, state, Configuration{":3000", 300})
 			Ω(err).Should(BeNil())
 
 			Ω(len(state.Peers)).Should(Equal(1))

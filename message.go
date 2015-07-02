@@ -26,16 +26,19 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
 type messageFn func(message []string,
 	sourceSocket *websocket.Conn,
-	state SignalBox) (newState SignalBox, err error)
+	state SignalBox,
+	config Configuration) (newState SignalBox, err error)
 
 func announce(message []string,
 	sourceSocket *websocket.Conn,
-	state SignalBox) (newState SignalBox, err error) {
+	state SignalBox,
+	config Configuration) (newState SignalBox, err error) {
 
 	source, destination, err := ParsePeerAndRoom(message)
 	if err != nil {
@@ -72,20 +75,21 @@ func announce(message []string,
 	// Annouce the arrival to all the peers currently in the room.
 	for _, p := range state.RoomContains[room.Room] {
 		if p.Id != peer.Id && p.socket != nil {
-			writeMessage(p.socket, message)
+			writeMessage(p.socket, message, config)
 		}
 	}
 
 	// Report back to the announcer the number of peers in the room.
 	members := fmt.Sprintf("{\"memberCount\":%d}", len(state.RoomContains[room.Room]))
-	err = writeMessage(sourceSocket, []string{"/roominfo", members})
+	err = writeMessage(sourceSocket, []string{"/roominfo", members}, config)
 
 	return state, nil
 }
 
 func leave(message []string,
 	sourceSocket *websocket.Conn,
-	state SignalBox) (newState SignalBox, err error) {
+	state SignalBox,
+	config Configuration) (newState SignalBox, err error) {
 
 	source, destination, err := ParsePeerAndRoom(message)
 	if err != nil {
@@ -102,12 +106,13 @@ func leave(message []string,
 		return state, errors.New(fmt.Sprintf("Unable to leave, room %s doesn't exist", destination.Room))
 	}
 
-	return removePeer(peer, room, message, state)
+	return removePeer(peer, room, message, state, config)
 }
 
 func closePeer(message []string,
 	sourceSocket *websocket.Conn,
-	state SignalBox) (newState SignalBox, err error) {
+	state SignalBox,
+	config Configuration) (newState SignalBox, err error) {
 
 	source := findPeerBySocket(sourceSocket, state)
 	if source == nil {
@@ -122,7 +127,7 @@ func closePeer(message []string,
 				src := fmt.Sprintf("{\"id\":\"%s\"}", source.Id)
 				rm := fmt.Sprintf("{\"room\":\"%s\"}", r.Room)
 
-				state, err = removePeer(source, r, []string{"/leave", src, rm}, state)
+				state, err = removePeer(source, r, []string{"/leave", src, rm}, state, config)
 				if err != nil {
 					return state, err
 				}
@@ -130,13 +135,15 @@ func closePeer(message []string,
 		}
 	}
 
-	// Make sure the socket is closed from this end.
-	err = sourceSocket.Close()
-
 	return state, err
 }
 
-func removePeer(source *Peer, destination *Room, message []string, state SignalBox) (newState SignalBox, err error) {
+func removePeer(source *Peer,
+	destination *Room,
+	message []string,
+	state SignalBox,
+	config Configuration) (newState SignalBox, err error) {
+
 	delete(state.PeerIsIn[source.Id], destination.Room)
 	if len(state.PeerIsIn[source.Id]) == 0 {
 		log.Printf("INFO - Removing Peer: %s\n", source.Id)
@@ -153,7 +160,7 @@ func removePeer(source *Peer, destination *Room, message []string, state SignalB
 		// Broadcast the departure to everyone else still in the room
 		for _, p := range state.RoomContains[destination.Room] {
 			if p.socket != nil && err == nil {
-				err = writeMessage(p.socket, message)
+				err = writeMessage(p.socket, message, config)
 			}
 		}
 	}
@@ -163,7 +170,8 @@ func removePeer(source *Peer, destination *Room, message []string, state SignalB
 
 func to(message []string,
 	sourceSocket *websocket.Conn,
-	state SignalBox) (newState SignalBox, err error) {
+	state SignalBox,
+	config Configuration) (newState SignalBox, err error) {
 
 	if len(message) < 3 {
 		return state, errors.New("Not enouth parts for personalised 'to' message")
@@ -175,16 +183,17 @@ func to(message []string,
 	}
 
 	if d.socket != nil {
-		err = writeMessage(d.socket, message)
+		err = writeMessage(d.socket, message, config)
 	}
 
 	return state, err
 }
 
-func writeMessage(ws *websocket.Conn, message []string) error {
+func writeMessage(ws *websocket.Conn, message []string, config Configuration) error {
 	b := strings.Join(message, "|")
 	if ws != nil {
-		// log.Printf("INFO - Writing %s to %p", b, ws)
+		//log.Printf("INFO - Writing %s to %p", b, ws)
+		ws.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
 		return ws.WriteMessage(websocket.TextMessage, []byte(b))
 	}
 
@@ -193,7 +202,8 @@ func writeMessage(ws *websocket.Conn, message []string) error {
 
 func custom(message []string,
 	sourceSocket *websocket.Conn,
-	state SignalBox) (newState SignalBox, err error) {
+	state SignalBox,
+	config Configuration) (newState SignalBox, err error) {
 
 	source := Peer{}
 	if len(message) < 2 {
@@ -213,7 +223,7 @@ func custom(message []string,
 	for _, r := range state.PeerIsIn[peer.Id] {
 		for _, p := range state.RoomContains[r.Room] {
 			if p.Id != peer.Id && p.socket != nil && err == nil {
-				err = writeMessage(p.socket, message)
+				err = writeMessage(p.socket, message, config)
 			}
 		}
 	}
@@ -223,7 +233,8 @@ func custom(message []string,
 
 func ignore(message []string,
 	sourceSocket *websocket.Conn,
-	state SignalBox) (newState SignalBox, err error) {
+	state SignalBox,
+	config Configuration) (newState SignalBox, err error) {
 	return state, nil
 }
 

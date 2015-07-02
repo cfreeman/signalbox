@@ -20,7 +20,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"io"
@@ -85,11 +84,18 @@ func messagePump(config Configuration, msg chan Message, ws *websocket.Conn) {
 		}
 
 		// Recieved content from socket - extend read deadline.
+		//log.Printf("Recieved %s from %p", socketContents, ws)
 		ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
 
 		// Pump the new message into the signalbox.
-		//log.Printf("Recieved %s from %p", socketContents, ws)
 		msg <- Message{ws, socketContents}
+	}
+
+	// Make sure the socket is closed from this end.
+	err := ws.Close()
+	if err != nil {
+		log.Printf("ERROR - Unable to close websocket.")
+		log.Print(err)
 	}
 }
 
@@ -106,9 +112,8 @@ func signalbox(config Configuration, msg chan Message) {
 		// with pong brand baby oil to keep everything running smoothly.
 		if strings.HasPrefix(m.msgBody, "primus::ping::") {
 			pong := fmt.Sprintf("primus::pong::%s", strings.Split(m.msgBody, "primus::ping::")[1])
-			b, _ := json.Marshal(pong)
 
-			m.msgSocket.WriteMessage(websocket.TextMessage, b)
+			m.msgSocket.WriteMessage(websocket.TextMessage, []byte(pong))
 			m.msgSocket.SetWriteDeadline(time.Now().Add(config.SocketTimeout * time.Second))
 			continue
 		}
@@ -120,7 +125,7 @@ func signalbox(config Configuration, msg chan Message) {
 			continue
 		}
 
-		s, err = action(messageBody, m.msgSocket, s)
+		s, err = action(messageBody, m.msgSocket, s, config)
 		if err != nil {
 			log.Printf("ERROR - signalbox: Unable to update state.")
 			log.Print(err)
@@ -156,6 +161,12 @@ func main() {
 			log.Printf("ERROR - http.HandleFunc: %s", err)
 			return
 		}
+
+		ws.SetPongHandler(func(string) error {
+			//log.Printf("INFO - Gorilla websocket pong handled.")
+			ws.SetReadDeadline(time.Now().Add(config.SocketTimeout * time.Second))
+			return nil
+		})
 
 		// Start pumping messages from this websocket into the signal box.
 		go messagePump(config, msg, ws)
